@@ -11,3 +11,17 @@ clap = "3.0.0-beta.4"
 nom = "7.0.0"
 regex = "1.5.4"
 yara = { version = "0.9.0", features = ["vendored"] }
+
+[[bin]]
+name = "yara_dedup"
+path = "src/main.rs"
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+codegen-units = 1
+debug-assertions = false
+debug = false
+opt-level = 3
+lto = true
