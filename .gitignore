@@ -1,0 +1,9 @@
+Cargo.lock
+target/
+
+.idea/
+.vscode/
+data/
+.yar
+.yara
+
