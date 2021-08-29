@@ -1,0 +1,13 @@
+[package]
+name = "yara_dedup"
+description = "Dedup yara rules and compile"
+authors = ["Marirs <marirs@gmail.com>"]
+keywords = ["yara", "rules", "dedupe"]
+version = "0.1.1"
+edition="2018"
+
+[dependencies]
+clap = "3.0.0-beta.4"
+nom = "7.0.0"
+regex = "1.5.4"
+yara = { version = "0.9.0", features = ["vendored"] }
