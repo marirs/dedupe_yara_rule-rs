@@ -2,8 +2,10 @@
 name = "yara_dedupe"
 description = "Dedup yara rules and compile"
 authors = ["Marirs <marirs@gmail.com>"]
-keywords = ["yara", "rules", "dedupe"]
 version = "0.1.1"
+keywords = ["yara", "rules", "dedupe"]
+readme = "README.md"
+license-file = "LICENSE"
 edition="2018"
 
 [dependencies]
