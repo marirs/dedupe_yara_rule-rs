@@ -15,6 +15,20 @@ It also organises & creates:
   - macOS: `brew install libmagic`
   - Linux: `apt -y install libmagic1 libmagic-dev`
 
+### Preparing the system
+- Linux
+```bash
+sudo apt-get -y install libjansson-dev libmagic-dev libmagic1 libclang-dev clang
+wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.1.2.zip
+unzip v4.1.1.zip
+cd yara-4.1.1/
+./bootstrap.sh
+./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-macho --enable-dex --enable-magic --enable-profiling
+make -j8
+make install
+ldconfig
+```
+
 ### Compiling
 - macOS
 ```bash
