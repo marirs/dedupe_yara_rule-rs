@@ -5,9 +5,11 @@ use std::{
     path::Path,
     process::exit,
 };
-use yara_dedup::nom::parse_vec;
-use yara_dedup::utils::{collect_yar_files, remove_comments};
 use yara::Compiler;
+use yara_dedupe::{
+    nom::parse_vec,
+    utils::{collect_yar_files, remove_comments},
+};
 
 fn main() {
     let matches = App::new("Yara Dedupe")
@@ -24,7 +26,7 @@ fn main() {
                         .short('i')
                         .long("input-dir")
                         .required(true)
-                        .takes_value(true)
+                        .takes_value(true),
                 )
                 .arg(
                     Arg::new("output_file")
@@ -32,7 +34,7 @@ fn main() {
                         .short('o')
                         .long("output-file")
                         .required(true)
-                        .takes_value(true)
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -41,8 +43,8 @@ fn main() {
                 .arg(
                     Arg::new("input_file")
                         .about("yara ruleset file to compile")
-                        .required(true)
-                )
+                        .required(true),
+                ),
         )
         .get_matches();
 
@@ -93,21 +95,26 @@ fn main() {
                 .expect("error");
 
             println!("* Output yara file stored in: {}", output_file);
-
-        },
+        }
         Some(("compile", compile_args)) => {
             let input_file = compile_args.value_of("input_file").unwrap();
             let mut compiler = Compiler::new().unwrap();
             compiler.add_rules_file(input_file).unwrap();
             let compiled_output_file = format!("compiled_{}", input_file);
-            let mut rules = compiler.compile_rules().expect("Couldn't compile the rules");
-            rules.save(&compiled_output_file).expect("Couldn't save the compiled rules");
+            let mut rules = compiler
+                .compile_rules()
+                .expect("Couldn't compile the rules");
+            rules
+                .save(&compiled_output_file)
+                .expect("Couldn't save the compiled rules");
 
-            println!("* Compiled yara ruleset is stored in: {}", compiled_output_file);
-
-        },
+            println!(
+                "* Compiled yara ruleset is stored in: {}",
+                compiled_output_file
+            );
+        }
         None => println!("No command passed. Nothing to do."),
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 
     println!();
