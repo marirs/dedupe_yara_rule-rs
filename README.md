@@ -23,7 +23,7 @@ wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.1.2.zip
 unzip v4.1.1.zip
 cd yara-4.1.1/
 ./bootstrap.sh
-./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-macho --enable-dex --enable-magic --enable-profiling
+./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-macho --enable-dex --enable-magic --enable-profiling --with-crypto
 make -j8
 make install
 ldconfig
