@@ -8,7 +8,7 @@ use std::{
 use yara::Compiler;
 use yara_dedupe::{
     nom::parse_vec,
-    utils::{collect_yar_files, remove_comments},
+    utils::{collect_yar_files, remove_comments, collect_imports},
 };
 
 fn main() {
@@ -61,6 +61,7 @@ fn main() {
 
             let mut file_count = 0;
 
+            let mut all_imports = vec![];
             let mut all_yars: Vec<_> = collect_yar_files(&input_dir)
                 .into_iter()
                 .inspect(|x| {
@@ -75,11 +76,25 @@ fn main() {
                     String::from_utf8_lossy (&buf).to_string()
                 })
                 .map(remove_comments)
-                .flat_map(|x| parse_vec(&x).map(|x| x.1).ok())
+                .flat_map(|x| {
+                    let imports = collect_imports(x.to_owned());
+                    if !imports.is_empty() {
+                        for import in imports {
+                            all_imports.push(import)
+                        }
+                    }
+                    parse_vec(&x).map(|x| x.1).ok()
+                })
                 .flatten()
                 .collect();
-
+            let mut all_imports = all_imports
+                .into_iter()
+                .filter(|x| !x.is_empty())
+                .collect::<Vec<String>>();
+            all_imports.sort();
+            all_imports.dedup();
             println!();
+            println!("* imports: {}", all_imports.join(", "));
             println!("* Total files processed: {}", file_count);
             println!("* Total yara rules: {}", all_yars.len());
 
@@ -90,8 +105,12 @@ fn main() {
 
             File::create(output_file)
                 .map(|mut f| {
+                    for i in all_imports {
+                        write!(f, "{}\n", i).expect("error in writing \"imports\" to output file")
+                    }
+                    write!(f, "\n").expect("error in writing to file");
                     for e in all_yars {
-                        write!(f, "{}\n\n", e).expect("error")
+                        write!(f, "{}\n\n", e).expect("error in writing \"yara rules\" to output file")
                     }
                 })
                 .expect("error");

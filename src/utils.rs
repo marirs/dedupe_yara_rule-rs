@@ -25,3 +25,20 @@ pub fn remove_comments(st: String) -> String {
     let st = comments.replace_all(&st, "");
     st.into()
 }
+
+pub fn collect_imports(st: String) -> Vec<String> {
+    st
+        .lines()
+        .map(|x|{
+            if x.starts_with("import") {
+                x
+            } else {
+                ""
+            }
+                .trim()
+                .replace("import\"", "import \"")
+                .replace("“", "\"")
+                .replace("”", "\"")
+        })
+        .collect()
+}
