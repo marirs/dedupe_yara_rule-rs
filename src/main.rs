@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
 use std::{
-    fs::{read_to_string, File},
-    io::Write,
+    fs::File,
+    io::{Read, Write},
     path::Path,
     process::exit,
 };
@@ -68,7 +68,12 @@ fn main() {
                     let _ = std::io::stdout().flush();
                     file_count += 1;
                 })
-                .map(|path| read_to_string(&path).unwrap())
+                .map(|path| {
+                    let mut file = File::open(path).unwrap();
+                    let mut buf = vec![];
+                    file.read_to_end (&mut buf).unwrap();
+                    String::from_utf8_lossy (&buf).to_string()
+                })
                 .map(remove_comments)
                 .flat_map(|x| parse_vec(&x).map(|x| x.1).ok())
                 .flatten()
