@@ -12,7 +12,8 @@ edition="2018"
 clap = "3.0.0-beta.4"
 nom = "7.0.0"
 regex = "1.5.4"
-yara = "0.9.0"
+#yara = "0.9.0"
+yara = { version = "0.13.0", features = ["serde", "vendored"] }
 
 [[bin]]
 name = "yara_dedupe"
