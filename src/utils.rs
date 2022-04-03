@@ -7,8 +7,7 @@ pub fn collect_yar_files(path: &dyn AsRef<Path>) -> Vec<String> {
             .read_dir()
             .unwrap()
             .flatten()
-            .map(|c| collect_yar_files(&c.path()))
-            .flatten()
+            .flat_map(|c| collect_yar_files(&c.path()))
             .collect::<Vec<_>>()
     } else {
         match path.as_ref().extension() {

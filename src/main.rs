@@ -86,7 +86,7 @@ fn main() {
             File::create(output_file)
                 .map(|mut f| {
                     for e in all_yars {
-                        write!(f, "{}\n\n", e.to_string()).expect("error")
+                        write!(f, "{}\n\n", e).expect("error")
                     }
                 })
                 .expect("error");
@@ -95,10 +95,7 @@ fn main() {
         }
         Some(("compile", compile_args)) => {
             let input_file = compile_args.value_of("input_file").unwrap();
-            let compiler = Compiler::new()
-                .unwrap()
-                .add_rules_file(input_file)
-                .unwrap();
+            let compiler = Compiler::new().unwrap().add_rules_file(input_file).unwrap();
             let compiled_output_file = format!("compiled_{}", input_file);
             let mut rules = compiler
                 .compile_rules()
