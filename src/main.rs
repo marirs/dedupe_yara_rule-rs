@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_version, App, Arg};
+use clap::{Arg, Command};
 use std::{
     fs::{read_to_string, File},
     io::Write,
@@ -12,17 +12,14 @@ use yara_dedupe::{
 };
 
 fn main() {
-    let matches = App::new("Yara Dedupe")
-        .about("Dedupes & compiles given yara rules")
-        .version(crate_version!())
-        .author(crate_authors!())
-        .license("MIT")
+    let matches = Command::new("Yara Dedupe")
+        .about("Dedupe & Compile Yara Rules")
         .subcommand(
-            App::new("dedupe")
+            Command::new("dedupe")
                 .about("Dedupe given yara rules")
                 .arg(
                     Arg::new("input_dir")
-                        .about("directory containing the yara rule files for dedupe")
+                        .help("directory containing the yara rule files for dedupe")
                         .short('i')
                         .long("input-dir")
                         .required(true)
@@ -30,7 +27,7 @@ fn main() {
                 )
                 .arg(
                     Arg::new("output_file")
-                        .about("output file name to store the deduplicated single yara file")
+                        .help("output file name to store the deduplicated single yara file")
                         .short('o')
                         .long("output-file")
                         .required(true)
@@ -38,11 +35,11 @@ fn main() {
                 ),
         )
         .subcommand(
-            App::new("compile")
+            Command::new("compile")
                 .about("Compiles a given Yara ruleset")
                 .arg(
                     Arg::new("input_file")
-                        .about("yara ruleset file to compile")
+                        .help("yara ruleset file to compile")
                         .required(true),
                 ),
         )
