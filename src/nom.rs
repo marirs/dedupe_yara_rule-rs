@@ -127,6 +127,14 @@ fn string_name(input: &str) -> IResult<&str, String> {
     Ok((res.0, format!("${}", res.1.1.iter().collect::<String>())))
 }
 
+fn string_count(input: &str) -> IResult<&str, String> {
+    let res = pair(
+        tag("#"),
+        many0(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890"))
+    )(input)?;
+    Ok((res.0, format!("#{}", res.1.1.iter().collect::<String>())))
+}
+
 fn import_ref(input: &str) -> IResult<&str, String> {
     let res = tuple((
         many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
@@ -257,6 +265,7 @@ fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
                  map(import_ref, |m| crate::YarRuleConditionNode::ImportRef(m)),
                  map(bytes_with_offset, |m| crate::YarRuleConditionNode::BytesWithOffset(m)),
                  map(pair(string_name, tag("*")), |(m, _)| crate::YarRuleConditionNode::StringRef(format!("{}*", m))),
+                 map(string_count, |m| crate::YarRuleConditionNode::StringCount(m)),
                  map(string_name, |m| crate::YarRuleConditionNode::StringRef(m)),
                  map(name, |m| crate::YarRuleConditionNode::RuleRef(m)),
                  map(size, |m| crate::YarRuleConditionNode::Size(m)),
