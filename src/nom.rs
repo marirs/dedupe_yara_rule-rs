@@ -99,16 +99,19 @@ fn hexdecimal_string(input: &str) -> IResult<&str, String> {
 }
 
 fn regex(input: &str) -> IResult<&str, String> {
-    let (ii, ss) = delimited(
-        char('/'),
-        fold_many0(regex_character, String::new, |mut string, c| {
-            string.extend(c.chars());
-            string
-        }),
-        char('/'),
+    let (ii, (ss, sss)) = pair(
+        delimited(
+            char('/'),
+            fold_many0(regex_character, String::new, |mut string, c| {
+                string.extend(c.chars());
+                string
+            }),
+            char('/'),
+        ),
+        many0(one_of("is"))
     )(input)?;
-    let (input, modifiers) = many0(preceded(whitespace0, modifier))(ii)?;
-    Ok((input, format!("/{}/ {}", ss, modifiers.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(" "))))
+    let (input, modifiers) = many0(preceded(whitespace1, modifier))(ii)?;
+    Ok((input, format!("/{}/{} {}", sss.iter().collect::<String>(), ss, modifiers.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(" "))))
 }
 
 fn name(input: &str) -> IResult<&str, String> {
@@ -135,13 +138,88 @@ fn string_count(input: &str) -> IResult<&str, String> {
     Ok((res.0, format!("#{}", res.1.1.iter().collect::<String>())))
 }
 
+fn string_count2(input: &str) -> IResult<&str, String> {
+    let res = tuple((
+        tag("@"),
+        many0(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
+        opt(
+            tuple((
+                tag("["),
+                whitespace0,
+                condition,
+                whitespace0,
+                tag("]"),
+            ))
+        )
+    ))(input)?;
+    Ok((res.0, format!("@{}{}", res.1.1.iter().collect::<String>(), if let Some((_, _, rr, _, _)) = res.1.2{
+        format!("[{}]", rr)
+    }else{"".to_string()})))
+}
+
 fn import_ref(input: &str) -> IResult<&str, String> {
     let res = tuple((
         many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
-        tag("."),
-        many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890"))
+        many1(tuple((
+            tag("."),
+            many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
+            opt(delimited(
+                tuple((
+                    whitespace0,
+                    tag("("),
+                    whitespace0
+                )),
+                opt(
+                    pair(
+                        preceded(
+                            whitespace0,
+                            condition,
+                        ),
+                        many0(
+                            preceded(
+                                tuple((
+                                    whitespace0,
+                                    tag(","),
+                                    whitespace0
+                                )),
+                                condition
+                            ))
+                    ),
+                ),
+                pair(
+                    whitespace0,
+                    tag(")"),
+                )
+            )),
+            opt(
+                delimited(
+                    tuple((
+                        whitespace0,
+                        tag("["),
+                        whitespace0,
+                    )),
+                    condition,
+                    pair(
+                        whitespace0,
+                        tag("]")
+                    )
+                )
+            )
+        )))
     ))(input)?;
-    Ok((res.0, format!("{}.{}", res.1.0.iter().collect::<String>(), res.1.2.iter().collect::<String>())))
+    Ok((res.0, format!("{}{}", res.1.0.iter().collect::<String>(), res.1.1.iter().map(|(_, n, pa, ma)|{
+        format!(".{}{}{}", n.iter().collect::<String>(), if let Some(Some((ppa, pppa))) = pa{
+            format!("({}{}{})", ppa, if pppa.len() >0 {", "} else {""}, pppa.iter().map(|ppp| ppp.to_string()).collect::<Vec<String>>().join(", "))
+        }else if let Some(None) = pa{
+            "()".to_string()
+        }else {
+            "".to_string()
+        }, if let Some(mma) = ma{
+            format!("[{}]", mma)
+        }else{
+            "".to_string()
+        })
+    }).collect::<Vec<String>>().join(""))))
 }
 
 fn number(input: &str) -> IResult<&str, i64> {
@@ -182,33 +260,31 @@ fn parens(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
     preceded(whitespace0, delimited(tag("("), delimited(whitespace0, condition, whitespace0), tag(")")))(i)
 }
 
-fn bytes_with_offset(i: &str) -> IResult<&str, String>{
+fn bytes_with_offset(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
     let res = tuple((
+        whitespace0,
         alt((
-            tag("int8"),
             tag("int8be"),
-            tag("int16"),
+            tag("int8"),
             tag("int16be"),
-            tag("int32"),
+            tag("int16"),
             tag("int32be"),
-            tag("uint8"),
+            tag("int32"),
             tag("uint8be"),
-            tag("uint16"),
+            tag("uint8"),
             tag("uint16be"),
-            tag("uint32"),
+            tag("uint16"),
             tag("uint32be"),
+            tag("uint32"),
         )),
         whitespace0,
         tag("("),
         whitespace0,
-        alt((
-            map(number, |n| format!("{}", n)),
-            bytes_with_offset
-        )),
+        condition,
         whitespace0,
         tag(")")
     ))(i)?;
-    Ok((res.0, format!("{}({})", res.1.0, res.1.4)))
+    Ok((res.0, crate::YarRuleConditionNode::BytesWithOffset(res.1.1.to_string(), Box::new(res.1.5))))
 }
 
 fn size(i: &str) -> IResult<&str, usize> {
@@ -253,6 +329,15 @@ fn set(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
     Ok((res.0, crate::YarRuleConditionNode::Set(aa)))
 }
 
+fn not(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
+    let res = tuple((
+        tag("not"),
+        whitespace1,
+        condition
+    ))(i)?;
+    Ok((res.0, crate::YarRuleConditionNode::Not(Box::new(res.1.2))))
+}
+
 
 fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
     preceded(whitespace0,
@@ -262,9 +347,13 @@ fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
                      tag("any"),
                      tag("them")
                  )), |m: &str| crate::YarRuleConditionNode::Reserved(m.to_string())),
+                 not,
                  map(import_ref, |m| crate::YarRuleConditionNode::ImportRef(m)),
-                 map(bytes_with_offset, |m| crate::YarRuleConditionNode::BytesWithOffset(m)),
+                 bytes_with_offset,
                  map(pair(string_name, tag("*")), |(m, _)| crate::YarRuleConditionNode::StringRef(format!("{}*", m))),
+                 map(regex, |m| crate::YarRuleConditionNode::Regex(m)),
+                 map(string, |m| crate::YarRuleConditionNode::ConstString(m)),
+                 map(string_count2, |m| crate::YarRuleConditionNode::StringCount(m)),
                  map(string_count, |m| crate::YarRuleConditionNode::StringCount(m)),
                  map(string_name, |m| crate::YarRuleConditionNode::StringRef(m)),
                  map(name, |m| crate::YarRuleConditionNode::RuleRef(m)),
@@ -279,14 +368,24 @@ fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
 fn condition(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
     let (i, l) = literal(i)?;
     fold_many0(
-        preceded(whitespace1, pair(alt((tag("and"),
+        preceded(whitespace0, pair(alt((tag("and"),
                                         tag("or"),
                                         tag("of"),
                                         tag("in"),
                                         tag("at"),
                                         tag("=="),
+                                        tag("!="),
+                                        tag("contains"),
+                                        tag("icontains"),
+                                        tag("matches"),
+                                        tag(">="),
+                                        tag("<="),
                                         tag(">"),
-                                        tag("<"))), preceded(whitespace1, literal))),
+                                        tag("<"),
+                                        tag("+"),
+                                        tag("&"),
+                                        tag("|"),
+                                        tag("-"))), preceded(whitespace0, literal))),
         move || l.clone(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| {
             match op{
@@ -295,7 +394,8 @@ fn condition(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
                 "at" => crate::YarRuleConditionNode::At(Box::new(acc), Box::new(val)),
                 "of" => crate::YarRuleConditionNode::Of(Box::new(acc), Box::new(val)),
                 "in" => crate::YarRuleConditionNode::In(Box::new(acc), Box::new(val)),
-                "==" | ">" | "<" => crate::YarRuleConditionNode::Cmp(op.to_string(), Box::new(acc), Box::new(val)),
+                "==" | "!=" | ">" | "<" | "<=" | ">=" | "&" | "|" | "contains" | "icontains" | "matches" => crate::YarRuleConditionNode::Cmp(op.to_string(), Box::new(acc), Box::new(val)),
+                "+" | "-" => crate::YarRuleConditionNode::Arithm(op.to_string(), Box::new(acc), Box::new(val)),
                 _ => crate::YarRuleConditionNode::None("".to_string())
             }
         },
@@ -427,4 +527,21 @@ pub fn parse_rules(i: &str) -> IResult<&str, crate::YarRuleSet>{
         includes: res.1.1,
         rules: res.1.2.into_iter().map(|r| (r.name.clone(), r)).collect()
     }))
+}
+
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn check_condition() {
+        println!("{:#?}", super::condition("0"));
+        println!("{:#?}", super::condition("uint32be(0)"));
+        println!("{:#?}", super::bytes_with_offset("uint32be(0)"));
+        println!("{:#?}", super::condition(r##"(
+            uint16be(filesize-2) == 0x2722 or  /* Footer 1 */
+                ( uint16be(filesize-2) == 0x220a and uint8(filesize-3) == 0x27 )  /* Footer 2 */
+
+        )"##));
+    }
+
 }

@@ -29,14 +29,17 @@ pub enum YarRuleConditionNode {
     In(Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
     Range(Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
     Cmp(String, Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
+    Arithm(String, Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
     Set(Vec<Box<YarRuleConditionNode>>),
     Not(Box<YarRuleConditionNode>),
     ImportRef(String),
     StringRef(String),
     StringCount(String),
     RuleRef(String),
-    BytesWithOffset(String),
+    BytesWithOffset(String, Box<YarRuleConditionNode>),
     Reserved(String),
+    ConstString(String),
+    Regex(String),
     Number(i64),
     Size(usize),
     None(String),
@@ -53,24 +56,22 @@ impl Display for YarRuleConditionNode {
             Self::Range(a, b) => write!(f, "({} .. {})", a, b),
             Self::Set(a) => write!(f, "({})", a.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(", ")),
             Self::Cmp(op, a, b) => write!(f, "({} {} {})", a, op, b),
+            Self::Arithm(op, a, b) => write!(f, "({} {} {})", a, op, b),
             Self::Not(a) => write!(f, "(not {})", a),
             Self::StringRef(a) => write!(f, "({})", a),
             Self::StringCount(a) => write!(f, "({})", a),
             Self::ImportRef(a) => write!(f, "({})", a),
             Self::RuleRef(a) => write!(f, "({})", a),
             Self::Reserved(a) => write!(f, "({})", a),
+            Self::ConstString(a) => write!(f, "\"{}\"", a),
+            Self::Regex(a) => write!(f, "/{}/", a),
             Self::Number(a) => write!(f, "({})", a),
             Self::Size(a) => write!(f, "({})", a),
-            Self::BytesWithOffset(a) => write!(f, "({})", a),
+            Self::BytesWithOffset(a, b) => write!(f, "{}({})", a, b),
             Self::None(s) => write!(f, "({})", s),
         }
     }
 }
-
-//#[derive(Debug)]
-//pub struct YarRuleCondition {
-//    root: YarRuleConditionNode
-//}
 
 #[derive(Debug)]
 pub struct YarRuleBody {
