@@ -7,7 +7,7 @@ use std::{
 };
 use yara::Compiler;
 use yara_dedupe::{
-    nom::parse_vec,
+    nom::parse_rules,
     utils::{collect_yar_files, remove_comments, collect_imports},
 };
 
@@ -75,7 +75,6 @@ fn main() {
                     file.read_to_end (&mut buf).unwrap();
                     String::from_utf8_lossy (&buf).to_string()
                 })
-                .map(remove_comments)
                 .flat_map(|x| {
                     let imports = collect_imports(x.to_owned());
                     if !imports.is_empty() {
@@ -83,38 +82,27 @@ fn main() {
                             all_imports.push(import)
                         }
                     }
-                    parse_vec(&x).map(|x| x.1).ok()
+                    parse_rules(&x).map(|x| x.1).ok()
                 })
-                .flatten()
                 .collect();
-            let mut all_imports = all_imports
-                .into_iter()
-                .filter(|x| !x.is_empty())
-                .collect::<Vec<String>>();
-            all_imports.sort();
-            all_imports.dedup();
-            println!();
-            println!("* imports: {}", all_imports.join(", "));
             println!("* Total files processed: {}", file_count);
             println!("* Total yara rules: {}", all_yars.len());
+            //collect imports
+            let mut all_imports = std::collections::HashSet::new();
+            for y in &all_yars{
+                for i in &y.imports{
+                    all_imports.insert(i);
+                }
+            }
 
-            all_yars.sort_by_key(|x| x.name.clone());
-            all_yars.dedup_by_key(|x| x.name.clone());
-
-            println!("* Total yara rules after dedupe: {}", all_yars.len());
-
-            File::create(output_file)
-                .map(|mut f| {
-                    for i in all_imports {
-                        write!(f, "{}\n", i).expect("error in writing \"imports\" to output file")
-                    }
-                    write!(f, "\n").expect("error in writing to file");
-                    for e in all_yars {
-                        write!(f, "{}\n\n", e).expect("error in writing \"yara rules\" to output file")
-                    }
-                })
-                .expect("error");
-
+            let mut f = File::create(output_file).expect("errorof creating file");
+            for i in &all_imports {
+                write!(f, "import \"{}\"\n", i).expect("error in writing \"imports\" to output file")
+            }
+            write!(f, "\n").expect("error in writing to file");
+            for e in &all_yars {
+                write!(f, "{}\n\n", e).expect("error in writing \"yara rules\" to output file")
+            }
             println!("* Output yara file stored in: {}", output_file);
         }
         Some(("compile", compile_args)) => {
