@@ -127,6 +127,15 @@ fn string_name(input: &str) -> IResult<&str, String> {
     Ok((res.0, format!("${}", res.1.1.iter().collect::<String>())))
 }
 
+fn import_ref(input: &str) -> IResult<&str, String> {
+    let res = tuple((
+        many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
+        tag("."),
+        many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890"))
+    ))(input)?;
+    Ok((res.0, format!("{}.{}", res.1.0.iter().collect::<String>(), res.1.2.iter().collect::<String>())))
+}
+
 fn number(input: &str) -> IResult<&str, i64> {
     alt((
         map_res(pair(tag("0x"), many0(one_of("0123456789abcdefABCDEF"))), |(_, d)| i64::from_str_radix(&d.iter().collect::<String>(), 16)),
@@ -194,17 +203,66 @@ fn bytes_with_offset(i: &str) -> IResult<&str, String>{
     Ok((res.0, format!("{}({})", res.1.0, res.1.4)))
 }
 
+fn size(i: &str) -> IResult<&str, usize> {
+    let res = pair(map_res(digit1, |s| usize::from_str_radix(s, 10)),
+         alt((tag("KB"),
+              tag("MB")
+         )))(i)?;
+    Ok((res.0, res.1.0 * if res.1.1 == "KB" {1024} else {1024*1024}))
+}
+
+fn range(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
+    let res = tuple((
+        tag("("),
+        whitespace0,
+        condition,
+        whitespace0,
+        tag(".."),
+        whitespace0,
+        condition,
+        whitespace0,
+        tag(")")
+    ))(i)?;
+    Ok((res.0, crate::YarRuleConditionNode::Range(Box::new(res.1.2), Box::new(res.1.6))))
+}
+
+fn set(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
+    let res = tuple((
+        tag("("),
+        whitespace0,
+        condition,
+        many0(preceded(
+            tuple((whitespace0, tag(","), whitespace0)),
+            condition
+        )),
+        whitespace0,
+        tag(")")
+    ))(i)?;
+    let mut aa = vec![];
+    for ff in res.1.3{
+        aa.push(Box::new(ff));
+    }
+    Ok((res.0, crate::YarRuleConditionNode::Set(aa)))
+}
+
+
 fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
     preceded(whitespace0,
              alt((
                  map(alt((
-                     tag("1"),
                      tag("all"),
+                     tag("any"),
                      tag("them")
                  )), |m: &str| crate::YarRuleConditionNode::Reserved(m.to_string())),
+                 map(import_ref, |m| crate::YarRuleConditionNode::ImportRef(m)),
                  map(bytes_with_offset, |m| crate::YarRuleConditionNode::BytesWithOffset(m)),
                  map(pair(string_name, tag("*")), |(m, _)| crate::YarRuleConditionNode::StringRef(format!("{}*", m))),
                  map(string_name, |m| crate::YarRuleConditionNode::StringRef(m)),
+                 map(name, |m| crate::YarRuleConditionNode::RuleRef(m)),
+                 map(size, |m| crate::YarRuleConditionNode::Size(m)),
+                 map(number, |m| crate::YarRuleConditionNode::Number(m)),
+                 range,
+                 set,
                  parens,
              )))(i)
 }
@@ -214,13 +272,21 @@ fn condition(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
     fold_many0(
         preceded(whitespace1, pair(alt((tag("and"),
                                         tag("or"),
-                                        tag("of"))), preceded(whitespace1, literal))),
+                                        tag("of"),
+                                        tag("in"),
+                                        tag("at"),
+                                        tag("=="),
+                                        tag(">"),
+                                        tag("<"))), preceded(whitespace1, literal))),
         move || l.clone(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| {
             match op{
                 "and" => crate::YarRuleConditionNode::And(Box::new(acc), Box::new(val)),
                 "or" => crate::YarRuleConditionNode::Or(Box::new(acc), Box::new(val)),
+                "at" => crate::YarRuleConditionNode::At(Box::new(acc), Box::new(val)),
                 "of" => crate::YarRuleConditionNode::Of(Box::new(acc), Box::new(val)),
+                "in" => crate::YarRuleConditionNode::In(Box::new(acc), Box::new(val)),
+                "==" | ">" | "<" => crate::YarRuleConditionNode::Cmp(op.to_string(), Box::new(acc), Box::new(val)),
                 _ => crate::YarRuleConditionNode::None("".to_string())
             }
         },
