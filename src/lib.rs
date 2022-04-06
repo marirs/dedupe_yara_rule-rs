@@ -13,6 +13,13 @@ pub struct YarImport {
     pub value: String
 }
 
+impl Display for YarImport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+
 #[derive(Debug, Clone)]
 pub enum YarRuleConditionNode {
     And(Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
