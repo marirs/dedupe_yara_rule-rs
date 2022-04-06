@@ -1,6 +1,6 @@
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_until},
+    bytes::complete::{tag, take_until, tag_no_case},
     character::complete::{char, multispace0, multispace1, none_of, not_line_ending, line_ending, anychar, one_of, digit1},
     combinator::{map, opt, recognize, rest, map_res},
     multi::{many0, separated_list1, fold_many0, many1},
@@ -72,7 +72,8 @@ fn modifier(i: &str) -> IResult<&str, &str>{
     alt((
         tag("nocase"),
         tag("wide"),
-        tag("ascii")
+        tag("ascii"),
+        tag("fullword")
     ))(i)
 }
 
@@ -85,7 +86,7 @@ fn string(input: &str) -> IResult<&str, String> {
         }),
         char('"'),
     )(input)?;
-    let (input, modifiers) = many0(preceded(whitespace1, modifier))(input)?;
+    let (input, modifiers) = many0(preceded(whitespace0, modifier))(ii)?;
     Ok((input, format!("\"{}\" {}", ss, modifiers.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(" "))))
 }
 
@@ -98,14 +99,16 @@ fn hexdecimal_string(input: &str) -> IResult<&str, String> {
 }
 
 fn regex(input: &str) -> IResult<&str, String> {
-    delimited(
+    let (ii, ss) = delimited(
         char('/'),
         fold_many0(regex_character, String::new, |mut string, c| {
             string.extend(c.chars());
             string
         }),
         char('/'),
-    )(input)
+    )(input)?;
+    let (input, modifiers) = many0(preceded(whitespace0, modifier))(ii)?;
+    Ok((input, format!("/{}/ {}", ss, modifiers.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(" "))))
 }
 
 fn name(input: &str) -> IResult<&str, String> {
@@ -128,6 +131,13 @@ fn number(input: &str) -> IResult<&str, i64> {
     alt((
         map_res(pair(tag("0x"), many0(one_of("0123456789abcdefABCDEF"))), |(_, d)| i64::from_str_radix(&d.iter().collect::<String>(), 16)),
         map_res(digit1, |d| i64::from_str_radix(d, 10))
+    ))(input)
+}
+
+fn boolean(input: &str) -> IResult<&str, bool> {
+    alt((
+        map(tag_no_case("true"), |_| true),
+        map(tag_no_case("false"), |_| false),
     ))(input)
 }
 
@@ -171,7 +181,8 @@ fn body(i: &str) -> IResult<&str, crate::YarRuleBody>{
                 whitespace0,
                 alt((
                     map(number, |n| format!("{:02x}", n)),
-                    string
+                    map(boolean, |b| format!("{}", b)),
+                    string,
                 ))
             )))
         ))),
@@ -237,15 +248,7 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         tag("{"),
         body,
         tag("}")
-    ))(i);
-
-    let res = match res{
-        Ok(s) => s,
-        Err(e) => {
-            println!("{:#?}", e);
-            return Err(e);
-        }
-    };
+    ))(i)?;
     let mut r = crate::YarRule {
         private: if let Some(_) = res.1.1{true} else {false},
         name: res.1.6,
@@ -267,7 +270,18 @@ pub fn parse_rules(i: &str) -> IResult<&str, crate::YarRuleSet>{
         many0(preceded(whitespace0, import)),
         many0(preceded(whitespace0, include)),
         many1(preceded(whitespace0, rule)),
-    ))(i)?;
+    ))(i);
+
+    let res = match res{
+        Ok(s) => {
+            s
+        },
+        Err(e) => {
+            println!("{:#?}", e);
+            return Err(e);
+        }
+    };
+
 //    let mut rules = std::collections::HashMap::new();
 //    let mut imports = vec![];
 //    let mut includes = vec![];
