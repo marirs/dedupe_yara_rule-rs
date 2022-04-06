@@ -68,15 +68,25 @@ fn regex_character(input: &str) -> IResult<&str, String> {
     }
 }
 
+fn modifier(i: &str) -> IResult<&str, &str>{
+    alt((
+        tag("nocase"),
+        tag("wide"),
+        tag("ascii")
+    ))(i)
+}
+
 fn string(input: &str) -> IResult<&str, String> {
-    delimited(
+    let (ii, ss) = delimited(
         char('"'),
         fold_many0(character, String::new, |mut string, c| {
             string.extend(c.chars());
             string
         }),
         char('"'),
-    )(input)
+    )(input)?;
+    let (input, modifiers) = many0(preceded(whitespace1, modifier))(input)?;
+    Ok((input, format!("\"{}\" {}", ss, modifiers.iter().map(|s| s.to_string()).collect::<Vec<String>>().join(" "))))
 }
 
 fn hexdecimal_string(input: &str) -> IResult<&str, String> {
@@ -172,7 +182,7 @@ fn body(i: &str) -> IResult<&str, crate::YarRuleBody>{
             tag(":"),
             many1(tuple((
                 whitespace0,
-                name,
+                string_name,
                 whitespace0,
                 tag("="),
                 whitespace0,
@@ -212,6 +222,9 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         whitespace0,
         opt(pair(tag("private"), whitespace1)),
         opt(pair(tag("global"), whitespace1)),
+        whitespace0,
+        tag("rule"),
+        whitespace1,
         name,
         opt(tuple((
             whitespace0,
@@ -224,15 +237,23 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         tag("{"),
         body,
         tag("}")
-    ))(i)?;
+    ))(i);
+
+    let res = match res{
+        Ok(s) => s,
+        Err(e) => {
+            println!("{:?}", e);
+            return Err(e);
+        }
+    };
     let mut r = crate::YarRule {
         private: if let Some(_) = res.1.1{true} else {false},
-        name: res.1.3,
+        name: res.1.6,
         tags: vec![],
-        body: res.1.7,
+        body: res.1.10,
         refs: std::collections::HashSet::new()
     };
-    if let Some((_, _, _, t, tt)) = res.1.4{
+    if let Some((_, _, _, t, tt)) = res.1.7{
         r.tags.push(t);
         for (_, ttt) in tt{
             r.tags.push(ttt);
