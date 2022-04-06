@@ -140,7 +140,9 @@ pub struct YarRuleSet {
 
 impl YarRuleSet {
     pub fn new(includes: Vec<YarInclude>, imports: Vec<YarImport>, mut rules: std::collections::HashMap<String, YarRule>) -> YarRuleSet{
-        let mut refs = std::collections::HashMap::<String, Vec<String>>::new();
+        for r in rules{
+            r.set_refs();
+        }
         YarRuleSet{
             includes,
             imports,
