@@ -242,7 +242,7 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
     let res = match res{
         Ok(s) => s,
         Err(e) => {
-            println!("{:?}", e);
+            println!("{:#?}", e);
             return Err(e);
         }
     };
