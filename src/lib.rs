@@ -115,18 +115,14 @@ impl Display for YarRule {
 }
 
 impl YarRule{
-    pub fn order(&self, set: &YarRuleSet) -> Vec<String>{
-        let mut res = vec![];
-        for ii in &self.refs{
-            for iii in &set.rules.get(ii).unwrap().order(set){
-                if res.contains(iii){
-                    res.push(iii.to_string());
-                }
-            }
-            if res.contains(ii){
-                res.push(ii.to_string());
-            }
-        }
+    pub fn new(private: bool, name: String, tags: Vec<String>, body: YarRuleBody) -> YarRule{
+        let res = YarRule {
+            private,
+            name,
+            tags,
+            body,
+            refs: std::collections::HashSet::new()
+        };
         res
     }
 }
@@ -139,42 +135,19 @@ pub struct YarRuleSet {
 }
 
 impl YarRuleSet {
-    pub fn new(includes: Vec<YarInclude>, imports: Vec<YarImport>, mut rules: std::collections::HashMap<String, YarRule>) -> YarRuleSet{
-        for r in rules{
-            r.set_refs();
-        }
+    pub fn new(includes: Vec<YarInclude>, imports: Vec<YarImport>, rules: std::collections::HashMap<String, YarRule>) -> YarRuleSet{
         YarRuleSet{
             includes,
             imports,
             rules
         }
     }
-
-    pub fn order(&self) -> Vec<String>{
-        let mut res = vec![];
-        for (_, r) in &self.rules{
-            if r.refs.len() > 0{
-                for ii in r.order(self){
-                    if res.contains(&ii){
-                        res.push(ii);
-                    }
-                }
-            }
-            if res.contains(&r.name){
-                res.push(r.name.to_string());
-            }
-        }
-        res
-    }
 }
 
 impl Display for YarRuleSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        println!("{:#?}", self);
-        let vv = self.order();
-        println!("{:?}", vv);
-        for v in vv{
-            write!(f, "{}\n", self.rules.get(&v).unwrap())?;
+        for (_, v)  in &self.rules{
+            write!(f, "{}\n", v)?;
         }
         write!(f, "\n")
     }

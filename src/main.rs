@@ -8,7 +8,7 @@ use std::{
 use yara::Compiler;
 use yara_dedupe::{
     nom::parse_rules,
-    utils::{collect_yar_files, remove_comments, collect_imports},
+    utils::{collect_yar_files, collect_imports},
 };
 
 fn main() {
@@ -62,7 +62,7 @@ fn main() {
             let mut file_count = 0;
 
             let mut all_imports = vec![];
-            let mut all_yars: Vec<_> = collect_yar_files(&input_dir)
+            let all_yars: Vec<_> = collect_yar_files(&input_dir)
                 .into_iter()
                 .inspect(|x| {
                     print!("\r[* examining: {:120}]", x);

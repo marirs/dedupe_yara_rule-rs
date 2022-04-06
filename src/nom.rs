@@ -2,9 +2,9 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take_until, tag_no_case},
     character::complete::{char, multispace0, multispace1, none_of, not_line_ending, line_ending, anychar, one_of, digit1},
-    combinator::{map, opt, recognize, rest, map_res},
-    multi::{many0, separated_list1, fold_many0, many1},
-    sequence::{delimited, pair, preceded, terminated, tuple},
+    combinator::{map, opt, map_res},
+    multi::{many0, fold_many0, many1},
+    sequence::{delimited, pair, preceded, tuple},
     IResult,
 
 };
@@ -489,13 +489,12 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         whitespace0,
         tag("}")
     ))(i)?;
-    let mut r = crate::YarRule {
-        private: if let Some(_) = res.1.1{true} else {false},
-        name: res.1.6,
-        tags: vec![],
-        body: res.1.10,
-        refs: std::collections::HashSet::new()
-    };
+    let mut r = crate::YarRule::new(
+        if let Some(_) = res.1.1{true} else {false},
+        res.1.6,
+        vec![],
+        res.1.10
+    );
     if let Some((_, _, _, t, tt)) = res.1.7{
         r.tags.push(t);
         for (_, ttt) in tt{
