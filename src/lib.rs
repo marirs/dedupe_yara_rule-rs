@@ -28,6 +28,7 @@ pub enum YarRuleConditionNode {
     Not(Box<YarRuleConditionNode>),
     StringRef(String),
     RuleRef(String),
+    BytesWithOffset(String),
     Reserved(String),
     Number(i64),
     None(String),
@@ -44,6 +45,7 @@ impl Display for YarRuleConditionNode {
             Self::RuleRef(a) => write!(f, "({})", a),
             Self::Reserved(a) => write!(f, "({})", a),
             Self::Number(a) => write!(f, "({})", a),
+            Self::BytesWithOffset(a) => write!(f, "({})", a),
             Self::None(s) => write!(f, "({})", s),
         }
     }

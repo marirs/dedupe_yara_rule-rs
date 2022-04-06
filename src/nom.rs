@@ -161,9 +161,73 @@ fn include(i: &str) -> IResult<&str, crate::YarInclude>{
     Ok((res.0, crate::YarInclude{value: res.1.3}))
 }
 
+fn parens(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
+    preceded(whitespace0, delimited(tag("("), delimited(whitespace0, condition, whitespace0), tag(")")))(i)
+}
+
+fn bytes_with_offset(i: &str) -> IResult<&str, String>{
+    let res = tuple((
+        alt((
+            tag("int8"),
+            tag("int8be"),
+            tag("int16"),
+            tag("int16be"),
+            tag("int32"),
+            tag("int32be"),
+            tag("uint8"),
+            tag("uint8be"),
+            tag("uint16"),
+            tag("uint16be"),
+            tag("uint32"),
+            tag("uint32be"),
+        )),
+        whitespace0,
+        tag("("),
+        whitespace0,
+        alt((
+            map(number, |n| format!("{}", n)),
+            bytes_with_offset
+        )),
+        whitespace0,
+        tag(")")
+    ))(i)?;
+    Ok((res.0, format!("{}({})", res.1.0, res.1.4)))
+}
+
+fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
+    preceded(whitespace0,
+             alt((
+                 map(alt((
+                     tag("1"),
+                     tag("all"),
+                     tag("them")
+                 )), |m: &str| crate::YarRuleConditionNode::Reserved(m.to_string())),
+                 map(bytes_with_offset, |m| crate::YarRuleConditionNode::BytesWithOffset(m)),
+                 map(pair(string_name, tag("*")), |(m, _)| crate::YarRuleConditionNode::StringRef(format!("{}*", m))),
+                 map(string_name, |m| crate::YarRuleConditionNode::StringRef(m)),
+                 parens,
+             )))(i)
+}
+
 fn condition(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
-    let res = take_until("}")(i)?;
-    Ok((res.0, crate::YarRuleConditionNode::None(res.1.to_string())))
+    let (i, l) = literal(i)?;
+    fold_many0(
+        preceded(whitespace1, pair(alt((tag("and"),
+                                        tag("or"),
+                                        tag("of"))), preceded(whitespace1, literal))),
+        move || l.clone(),
+        |acc, (op, val): (&str, crate::YarRuleConditionNode)| {
+            match op{
+                "and" => crate::YarRuleConditionNode::And(Box::new(acc), Box::new(val)),
+                "or" => crate::YarRuleConditionNode::Or(Box::new(acc), Box::new(val)),
+                "of" => crate::YarRuleConditionNode::Of(Box::new(acc), Box::new(val)),
+                _ => crate::YarRuleConditionNode::None("".to_string())
+            }
+        },
+    )(i)
+
+//    let res = take_until("}")(i)?;
+//    Ok((res.0, crate::YarRuleConditionNode::None(res.1.to_string())))
 }
 
 fn body(i: &str) -> IResult<&str, crate::YarRuleBody>{
@@ -247,6 +311,7 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         whitespace0,
         tag("{"),
         body,
+        whitespace0,
         tag("}")
     ))(i)?;
     let mut r = crate::YarRule {
@@ -281,10 +346,6 @@ pub fn parse_rules(i: &str) -> IResult<&str, crate::YarRuleSet>{
             return Err(e);
         }
     };
-
-//    let mut rules = std::collections::HashMap::new();
-//    let mut imports = vec![];
-//    let mut includes = vec![];
 
     Ok((res.0, crate::YarRuleSet{
         imports: res.1.0,
