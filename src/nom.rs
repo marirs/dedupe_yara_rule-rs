@@ -442,6 +442,8 @@ fn term2(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
                                         tag("%"),
                                         tag(">>"),
                                         tag("<<"),
+                                        tag("&"),
+                                        tag("|"),
                                         tag("-"))), preceded(whitespace0, literal))),
         move || l.clone(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| {
