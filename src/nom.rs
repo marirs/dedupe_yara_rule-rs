@@ -68,12 +68,27 @@ fn regex_character(input: &str) -> IResult<&str, String> {
     }
 }
 
-fn modifier(i: &str) -> IResult<&str, &str>{
+fn modifier(i: &str) -> IResult<&str, String>{
     alt((
-        tag("nocase"),
-        tag("wide"),
-        tag("ascii"),
-        tag("fullword")
+        map(tag("nocase"), |s: &str| s.to_string()),
+        map(tag("wide"), |s: &str| s.to_string()),
+        map(tag("ascii"), |s: &str| s.to_string()),
+        map(tag("fullword"), |s: &str| s.to_string()),
+        map(tuple((
+            tag("xor"),
+            opt(tuple((
+                whitespace0,
+                tag("("),
+                whitespace0,
+                number,
+                whitespace0,
+                tag("-"),
+                whitespace0,
+                number,
+                whitespace0,
+                tag(")")
+            )))
+        )), |(_, s)| format!("xor{}", if let Some((_, _, _, a, _, _, _, b, _, _)) = s { format!("({}-{})", a, b) }else{"".to_string()}))
     ))(i)
 }
 
@@ -162,7 +177,9 @@ fn import_ref(input: &str) -> IResult<&str, String> {
     let res = tuple((
         many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
         many1(tuple((
+            whitespace0,
             tag("."),
+            whitespace0,
             many1(one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")),
             opt(delimited(
                 tuple((
@@ -208,7 +225,7 @@ fn import_ref(input: &str) -> IResult<&str, String> {
             )
         )))
     ))(input)?;
-    Ok((res.0, format!("{}{}", res.1.0.iter().collect::<String>(), res.1.1.iter().map(|(_, n, pa, ma)|{
+    Ok((res.0, format!("{}{}", res.1.0.iter().collect::<String>(), res.1.1.iter().map(|(_, _, _, n, pa, ma)|{
         format!(".{}{}{}", n.iter().collect::<String>(), if let Some(Some((ppa, pppa))) = pa{
             format!("({}{}{})", ppa, if pppa.len() >0 {", "} else {""}, pppa.iter().map(|ppp| ppp.to_string()).collect::<Vec<String>>().join(", "))
         }else if let Some(None) = pa{
@@ -339,6 +356,49 @@ fn not(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
     Ok((res.0, crate::YarRuleConditionNode::Not(Box::new(res.1.2))))
 }
 
+fn for_of(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
+    let res = tuple((
+        whitespace0,
+        tag("for"),
+        whitespace1,
+        term2,
+        whitespace1,
+        tag("of"),
+        whitespace1,
+        condition,
+        whitespace0,
+        tag(":"),
+        whitespace0,
+        tag("("),
+        condition,
+        whitespace0,
+        tag(")")
+    ))(i)?;
+    Ok((res.0, crate::YarRuleConditionNode::ForOf(Box::new(res.1.3), Box::new(res.1.7), Box::new(res.1.12))))
+}
+
+fn for_in(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
+    let res = tuple((
+        whitespace0,
+        tag("for"),
+        whitespace1,
+        condition,
+        whitespace1,
+        name,
+        whitespace1,
+        tag("in"),
+        whitespace1,
+        condition,
+        whitespace0,
+        tag(":"),
+        whitespace0,
+        tag("("),
+        condition,
+        whitespace0,
+        tag(")")
+    ))(i)?;
+    Ok((res.0, crate::YarRuleConditionNode::ForIn(Box::new(res.1.3), res.1.5, Box::new(res.1.9), Box::new(res.1.14))))
+}
 
 fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
     preceded(whitespace0,
@@ -351,6 +411,8 @@ fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
                      tag("any"),
                      tag("them")
                  )), |m: &str| crate::YarRuleConditionNode::Reserved(m.to_string())),
+                 for_of,
+                 for_in,
                  not,
                  map(import_ref, |m| crate::YarRuleConditionNode::ImportRef(m)),
                  bytes_with_offset,
@@ -373,13 +435,20 @@ fn term2(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
     let (i, l) = literal(i)?;
     fold_many0(
         preceded(whitespace0, pair(alt((tag("+"),
+                                        tag("*"),
+                                        tag("/"),
+                                        tag("&"),
+                                        tag("|"),
+                                        tag("%"),
+                                        tag(">>"),
+                                        tag("<<"),
                                         tag("&"),
                                         tag("|"),
                                         tag("-"))), preceded(whitespace0, literal))),
         move || l.clone(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| {
             match op{
-                "+" | "-" | "&" | "|" => crate::YarRuleConditionNode::Arithm(op.to_string(), Box::new(acc), Box::new(val)),
+                "+" | "-" | "&" | "|" | "*" | "/" | "%" | ">>" | "<<" => crate::YarRuleConditionNode::Arithm(op.to_string(), Box::new(acc), Box::new(val)),
                 _ => crate::YarRuleConditionNode::None("".to_string())
             }
         },
@@ -429,9 +498,6 @@ fn condition(i: &str) -> IResult<&str, crate::YarRuleConditionNode>{
             }
         },
     )(i)
-
-//    let res = take_until("}")(i)?;
-//    Ok((res.0, crate::YarRuleConditionNode::None(res.1.to_string())))
 }
 
 fn body(i: &str) -> IResult<&str, crate::YarRuleBody>{
@@ -517,7 +583,20 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         body,
         whitespace0,
         tag("}")
-    ))(i)?;
+    ))(i);
+    let res = match res{
+        Ok(s) => {
+            s
+        },
+        Err(e) => {
+//            if let nom::Err::Error(ee) = &e{
+//                if ee.input != ""{
+//                    println!("{:#?}", e);
+//                }
+//            }
+            return Err(e);
+        }
+    };
     let mut r = crate::YarRule::new(
         if let Some(_) = res.1.1{true} else {false},
         if let Some(_) = res.1.2{true} else {false},
@@ -530,16 +609,22 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule>{
         for (_, ttt) in tt{
             r.tags.push(ttt);
         }
-    }
+    };
     Ok((res.0, r))
 }
 
+pub enum Ss{
+    Import(crate::YarImport),
+    Include(crate::YarInclude),
+    Rule(crate::YarRule)
+}
+
 pub fn parse_rules(f: String, i: &str) -> IResult<&str, crate::YarRuleSet>{
-    let res = tuple((
-        many0(preceded(whitespace0, import)),
-        many0(preceded(whitespace0, include)),
-        many1(preceded(whitespace0, rule)),
-    ))(i);
+    let res = many1(preceded(whitespace0, alt((
+        map(import, |i| Ss::Import(i)),
+        map(include, |i| Ss::Include(i)),
+        map(rule, |r| Ss::Rule(r)),
+    ))))(i);
 
     let res = match res{
         Ok(s) => {
@@ -551,11 +636,29 @@ pub fn parse_rules(f: String, i: &str) -> IResult<&str, crate::YarRuleSet>{
         }
     };
 
+    let mut imports = vec![];
+    let mut includes = vec![];
+    let mut rules = std::collections::HashMap::new();
+
+    for r in res.1{
+        match r{
+            Ss::Import(i) => {
+                imports.push(i);
+            }
+            Ss::Include(i) => {
+                includes.push(i);
+            }
+            Ss::Rule(i) =>{
+                rules.insert(i.name.clone(), i);
+            }
+        }
+    }
+
     Ok((res.0, crate::YarRuleSet::new(
         f,
-        res.1.1,
-        res.1.0,
-        res.1.2.into_iter().map(|r| (r.name.clone(), r)).collect()
+        includes,
+        imports,
+        rules
     )))
 }
 
@@ -572,6 +675,23 @@ mod tests {
                 ( uint16be(filesize-2) == 0x220a and uint8(filesize-3) == 0x27 )  /* Footer 2 */
 
         )"##));
+    }
+
+    #[test]
+    fn check_for_in() {
+ //        println!("{:#?}", super::condition("( 0 .. pe.number_of_signatures )"));
+ //        println!("{:#?}", super::condition(" pe.signatures [ i ] . issuer contains \"DigiCert SHA2 Assured ID Code Signing CA\" and pe.signatures [ i ] . serial == \"08:68:70:51:50:f1:cf:c1:fc:c3:fc:91:a4:49:49:a6\" "));
+ //        println!("{:#?}", super::condition("for any i in ( 0 .. pe.number_of_signatures ) : ( pe.signatures [ i ] . issuer contains \"DigiCert SHA2 Assured ID Code Signing CA\" and pe.signatures [ i ] . serial == \"08:68:70:51:50:f1:cf:c1:fc:c3:fc:91:a4:49:49:a6\" )"));
+ //        println!("{:#?}",
+ //        super::condition("all of
+ //        them and @font > @headers
+ //        and @winexec == @font +
+        //        ((5 + 44) * 2)"));
+//        println!("{:#?}", super::condition("$ in (@keyfrag_esp_5[i]-100..@keyfrag_esp_5[i]+100)"));
+//        println!("{:#?}", super::condition("($keyfrag_esp_*)"));
+//        println!("{:#?}", super::for_of(r##" for all of ($keyfrag_esp_*): ($ in (@keyfrag_esp_5[i]-100..@keyfrag_esp_5[i]+100))"##));
+        println!("{:#?}", super::condition("uint16(0) == 0x5A4D and uint32(uint32(0x3C)) == 0x00004550 and filesize < 300KB and for any i in (0..pe.number_of_sections - 1): (pe.sections[i].name == \".Init\" and pe.sections[i].virtual_size % 1024 == 0)"));
+
     }
 
 }

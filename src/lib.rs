@@ -45,6 +45,8 @@ pub enum YarRuleConditionNode {
     Size(usize),
     Boolean(bool),
     None(String),
+    ForIn(Box<YarRuleConditionNode>, String, Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
+    ForOf(Box<YarRuleConditionNode>, Box<YarRuleConditionNode>, Box<YarRuleConditionNode>),
 }
 
 impl Display for YarRuleConditionNode {
@@ -73,6 +75,8 @@ impl Display for YarRuleConditionNode {
             Self::BytesWithOffset(a, b) => write!(f, "{}({})", a, b),
             Self::Boolean(b) => write!(f, "{}", if *b {"true"} else {"false"}),
             Self::None(s) => write!(f, "none ({})", s),
+            Self::ForIn(expression, identifier, indexes, boolean_expression) => write!(f, "for {} {} in {} : ({})", expression, identifier, indexes, boolean_expression),
+            Self::ForOf(expression, set, boolean_expression) => write!(f, "for {} of {} : ({})", expression, set, boolean_expression),
         }
     }
 }
@@ -137,7 +141,17 @@ impl YarRuleConditionNode{
                 res.extend(b.get_refs());
             },
             Self::Boolean(_a) => {},
-            Self::None(_s) => {}
+            Self::None(_s) => {},
+            Self::ForIn(expression, _identifier, indexes, boolean_expression) => {
+                res.extend(expression.get_refs());
+                res.extend(indexes.get_refs());
+                res.extend(boolean_expression.get_refs());
+            },
+            Self::ForOf(expression, set, boolean_expression) => {
+                res.extend(expression.get_refs());
+                res.extend(set.get_refs());
+                res.extend(boolean_expression.get_refs());
+            }
         }
         res
     }
