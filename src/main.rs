@@ -62,7 +62,7 @@ fn main() {
             let mut file_count = 0;
 
             let mut all_imports = vec![];
-            let all_yars: Vec<_> = collect_yar_files(&input_dir)
+            let all_yars: std::collections::HashMap<_, _> = collect_yar_files(&input_dir)
                 .into_iter()
                 .inspect(|x| {
                     print!("\r[* examining: {:120}]", x);
@@ -70,48 +70,62 @@ fn main() {
                     file_count += 1;
                 })
                 .map(|path| {
-                    let mut file = File::open(path).unwrap();
+                    let mut file = File::open(path.clone()).unwrap();
                     let mut buf = vec![];
                     file.read_to_end (&mut buf).unwrap();
-                    String::from_utf8_lossy (&buf).to_string()
+                    (path, String::from_utf8_lossy (&buf).to_string())
                 })
-                .flat_map(|x| {
+                .flat_map(|(p, x)| {
                     let imports = collect_imports(x.to_owned());
                     if !imports.is_empty() {
                         for import in imports {
                             all_imports.push(import)
                         }
                     }
-                    parse_rules(&x).map(|x| x.1).ok()
+                    parse_rules(std::path::Path::new(&p).canonicalize().unwrap().to_str().unwrap().to_string(), &x).map(|x| (x.1.name.clone(), x.1)).ok()
                 })
                 .collect();
+            let all_yars = yara_dedupe::YarAll::new(all_yars);
             println!("* Total files processed: {}", file_count);
-            println!("* Total yara rules: {}", all_yars.len());
+//            println!("* Total yara rules: {}", all_yars.len());
             //collect imports
-            let mut all_imports = std::collections::HashSet::new();
-            for y in &all_yars{
-                for i in &y.imports{
-                    all_imports.insert(i);
-                }
-            }
-
             let mut f = File::create(output_file).expect("errorof creating file");
-            for i in &all_imports {
-                write!(f, "import \"{}\"\n", i).expect("error in writing \"imports\" to output file")
+            for i in &all_yars.imports {
+                write!(f, "import {}\n", i).expect("error in writing \"imports\" to output file")
             }
             write!(f, "\n").expect("error in writing to file");
-            for e in &all_yars {
-                write!(f, "{}\n\n", e).expect("error in writing \"yara rules\" to output file")
-            }
+            write!(f, "{}\n\n", all_yars).expect("error in writing \"yara rules\" to output file");
             println!("* Output yara file stored in: {}", output_file);
         }
         Some(("compile", compile_args)) => {
             let input_file = compile_args.value_of("input_file").unwrap();
-            let compiler = Compiler::new().unwrap().add_rules_file(input_file).unwrap();
+            let compiler = Compiler::new().unwrap().add_rules_file(input_file);
+            let compiler = match compiler{
+                Ok(r) => r,
+                Err(e) => {
+                    if let yara::Error::Compile(e) = e{
+                        for e in e.iter(){
+                            if e.level == yara::errors::CompileErrorLevel::Error{
+//                                if !e.message.contains("regular expression") && !e.message.contains("unreferenced"){
+                                    eprintln!("Couldn't add rule: {:#?}", e);
+//                                }
+                            }
+                        }
+                    }
+                    panic!("");
+                }
+            };
+
             let compiled_output_file = format!("compiled_{}", input_file);
-            let mut rules = compiler
-                .compile_rules()
-                .expect("Couldn't compile the rules");
+            let rules = compiler
+                .compile_rules();
+            let mut rules = match rules{
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("Couldn't compile the rules: {:#?}", e);
+                    panic!("");
+                }
+            };
             rules
                 .save(&compiled_output_file)
                 .expect("Couldn't save the compiled rules");
