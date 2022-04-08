@@ -290,7 +290,7 @@ impl YarAll{
                 ruleset.insert(r.name.clone(), r.clone());
             }
         }
-        println!("* Total {} different rules", ruleset.len());
+        println!("\n* Total {} different rules", ruleset.len());
         let mut refs = std::collections::HashMap::new();
         for (n, r) in &ruleset{
             for i in r.get_rule_refs(){
@@ -300,12 +300,12 @@ impl YarAll{
                 }
             }
         }
-        println!("rule_refs: {:?}", refs);
+//        println!("rule_refs: {:?}", refs);
         for (n, rr) in &refs{
             match ruleset.get_mut(n){
                 Some(ss) => ss.refs = rr.clone().into_iter().collect(),
                 None => {
-                   eprintln!("not find rule {} referenced in {:?}", n, rr);
+//                   eprintln!("not find rule {} referenced in {:?}", n, rr);
                 }
             }
         }
