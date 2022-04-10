@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use std::{
+    collections::HashMap,
     fs::File,
     io::{Read, Write},
     path::Path,
@@ -8,7 +9,7 @@ use std::{
 use yara::Compiler;
 use yara_dedupe::{
     nom::parse_rules,
-    utils::{collect_yar_files, collect_imports},
+    utils::{collect_imports, collect_yar_files},
 };
 
 fn main() {
@@ -62,7 +63,7 @@ fn main() {
             let mut file_count = 0;
 
             let mut all_imports = vec![];
-            let all_yars: std::collections::HashMap<_, _> = collect_yar_files(&input_dir)
+            let all_yars: HashMap<_, _> = collect_yar_files(&input_dir)
                 .into_iter()
                 .inspect(|x| {
                     print!("\r[* examining: {:120}]", x);
@@ -72,8 +73,8 @@ fn main() {
                 .map(|path| {
                     let mut file = File::open(path.clone()).unwrap();
                     let mut buf = vec![];
-                    file.read_to_end (&mut buf).unwrap();
-                    (path, String::from_utf8_lossy (&buf).to_string())
+                    file.read_to_end(&mut buf).unwrap();
+                    (path, String::from_utf8_lossy(&buf).to_string())
                 })
                 .flat_map(|(p, x)| {
                     let imports = collect_imports(x.to_owned());
@@ -82,14 +83,24 @@ fn main() {
                             all_imports.push(import)
                         }
                     }
-                    parse_rules(std::path::Path::new(&p).canonicalize().unwrap().to_str().unwrap().to_string(), &x).map(|x| (x.1.name.clone(), x.1)).ok()
+                    parse_rules(
+                        Path::new(&p)
+                            .canonicalize()
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .to_string(),
+                        &x,
+                    )
+                    .map(|x| (x.1.name.clone(), x.1))
+                    .ok()
                 })
                 .collect();
+            println!();
             let all_yars = yara_dedupe::YarAll::new(all_yars);
             println!("* Total files processed: {}", file_count);
-//            println!("* Total yara rules: {}", all_yars.len());
-            //collect imports
-            let mut f = File::create(output_file).expect("errorof creating file");
+
+            let mut f = File::create(output_file).expect("error creating output yara file");
             for i in &all_yars.imports {
                 write!(f, "import {}\n", i).expect("error in writing \"imports\" to output file")
             }
@@ -100,15 +111,15 @@ fn main() {
         Some(("compile", compile_args)) => {
             let input_file = compile_args.value_of("input_file").unwrap();
             let compiler = Compiler::new().unwrap().add_rules_file(input_file);
-            let compiler = match compiler{
+            let compiler = match compiler {
                 Ok(r) => r,
                 Err(e) => {
-                    if let yara::Error::Compile(e) = e{
-                        for e in e.iter(){
-                            if e.level == yara::errors::CompileErrorLevel::Error{
-//                                if !e.message.contains("regular expression") && !e.message.contains("unreferenced"){
-                                    eprintln!("Couldn't add rule: {:#?}", e);
-//                                }
+                    if let yara::Error::Compile(e) = e {
+                        for e in e.iter() {
+                            if e.level == yara::errors::CompileErrorLevel::Error {
+                                //                                if !e.message.contains("regular expression") && !e.message.contains("unreferenced"){
+                                eprintln!("Couldn't add rule: {:#?}", e);
+                                //                                }
                             }
                         }
                     }
@@ -117,9 +128,8 @@ fn main() {
             };
 
             let compiled_output_file = format!("compiled_{}", input_file);
-            let rules = compiler
-                .compile_rules();
-            let mut rules = match rules{
+            let rules = compiler.compile_rules();
+            let mut rules = match rules {
                 Ok(r) => r,
                 Err(e) => {
                     eprintln!("Couldn't compile the rules: {:#?}", e);
