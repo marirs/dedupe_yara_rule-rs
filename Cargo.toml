@@ -2,7 +2,7 @@
 name = "yara_dedupe"
 description = "Dedup yara rules and compile"
 authors = ["Marirs <marirs@gmail.com>"]
-version = "0.2.0"
+version = "0.3.0"
 keywords = ["yara", "rules", "dedupe"]
 readme = "README.md"
 license-file = "LICENSE"

@@ -74,7 +74,7 @@ impl Display for YarRuleConditionNode {
                 "({})",
                 a.iter()
                     .map(|s| if let Self::StringRefMask(ss) = &**s {
-                        format!("{}", ss)
+                        ss.to_string()
                     } else {
                         s.to_string()
                     })
@@ -196,20 +196,20 @@ pub struct YarRuleBody {
 
 impl Display for YarRuleBody {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.meta.len() > 0 {
-            write!(f, "meta:\n")?;
+        if !self.meta.is_empty() {
+            writeln!(f, "meta:")?;
             for (n, m) in &self.meta {
-                write!(f, "\t{} = {}\n", n, m)?;
+                writeln!(f, "\t{} = {}", n, m)?;
             }
         }
-        if self.strings.len() > 0 {
-            write!(f, "strings:\n")?;
+        if !self.strings.is_empty() {
+            writeln!(f, "strings:")?;
             for (n, m) in &self.strings {
-                write!(f, "\t{} = {}\n", n, m)?;
+                writeln!(f, "\t{} = {}", n, m)?;
             }
         }
-        write!(f, "condition:\n")?;
-        write!(f, "\t{}\n", self.condition)
+        writeln!(f, "condition:")?;
+        writeln!(f, "\t{}", self.condition)
     }
 }
 
@@ -232,7 +232,7 @@ impl Display for YarRule {
             if self.global { "global " } else { "" },
             if self.private { "private " } else { "" },
             self.name,
-            if self.tags.len() > 0 {
+            if !self.tags.is_empty() {
                 format!(":{}", self.tags.join(" "))
             } else {
                 "".to_string()
@@ -250,7 +250,7 @@ impl YarRule {
         tags: Vec<String>,
         body: YarRuleBody,
     ) -> YarRule {
-        let res = YarRule {
+        YarRule {
             private,
             global,
             name,
@@ -258,8 +258,7 @@ impl YarRule {
             body,
             refs: HashSet::new(),
             added: false,
-        };
-        res
+        }
     }
 
     pub fn get_rule_refs(&self) -> HashSet<String> {
@@ -295,10 +294,10 @@ impl YarRuleSet {
 
 impl Display for YarRuleSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (_, v) in &self.rules {
-            write!(f, "{}\n", v)?;
+        for v in self.rules.values() {
+            writeln!(f, "{}", v)?;
         }
-        write!(f, "\n")
+        writeln!(f)
     }
 }
 
@@ -308,14 +307,12 @@ impl Ord for YarRuleSet {
             std::cmp::Ordering::Less
         } else if other.refs.contains(&self.name) {
             std::cmp::Ordering::Greater
+        } else if self.refs.len() > other.refs.len() {
+            std::cmp::Ordering::Less
+        } else if self.refs.len() < other.refs.len() {
+            std::cmp::Ordering::Greater
         } else {
-            if self.refs.len() > other.refs.len() {
-                std::cmp::Ordering::Less
-            } else if self.refs.len() < other.refs.len() {
-                std::cmp::Ordering::Greater
-            } else {
-                std::cmp::Ordering::Equal
-            }
+            std::cmp::Ordering::Equal
         }
     }
 }
@@ -328,11 +325,7 @@ impl PartialOrd for YarRuleSet {
 
 impl PartialEq for YarRuleSet {
     fn eq(&self, other: &Self) -> bool {
-        if self.refs.contains(&other.name) || other.refs.contains(&self.name) {
-            false
-        } else {
-            true
-        }
+        !(self.refs.contains(&other.name) || other.refs.contains(&self.name))
     }
 }
 
@@ -349,18 +342,18 @@ impl YarAll {
         let mut imports = HashSet::<String>::new();
         let mut ruleset = HashMap::<String, YarRule>::new();
         let mut total_yara_rules = 0;
-        for (_, s) in &sets {
+        for s in sets.values() {
             for i in &s.imports {
                 imports.insert(i.value.clone());
             }
-            for (_, r) in &s.rules {
+            for r in s.rules.values() {
                 total_yara_rules += 1;
                 ruleset.insert(r.name.clone(), r.clone());
             }
         }
         println!("* Total yara rules: {}", total_yara_rules);
         println!(
-            "* Total de-duped yara rules: {} ({}%)",
+            "* Total yara rules after dedupe: {} ({}%)",
             ruleset.len(),
             100 * ruleset.len() / total_yara_rules
         );
@@ -373,13 +366,10 @@ impl YarAll {
                 }
             }
         }
-        //        println!("rule_refs: {:?}", refs);
+
         for (n, rr) in &refs {
-            match ruleset.get_mut(n) {
-                Some(ss) => ss.refs = rr.clone().into_iter().collect(),
-                None => {
-                    //                   eprintln!("not find rule {} referenced in {:?}", n, rr);
-                }
+            if let Some(ss) = ruleset.get_mut(n) {
+                ss.refs = rr.clone().into_iter().collect()
             }
         }
         let mut ss = ruleset
@@ -394,9 +384,9 @@ impl YarAll {
 impl Display for YarAll {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for r in &self.rules {
-            write!(f, "{}\n", r)?;
+            writeln!(f, "{}", r)?;
         }
-        write!(f, "\n")
+        writeln!(f)
     }
 }
 

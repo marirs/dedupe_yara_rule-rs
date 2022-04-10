@@ -91,7 +91,7 @@ fn string(input: &str) -> IResult<&str, String> {
     let (ii, ss) = delimited(
         char('"'),
         fold_many0(character, String::new, |mut string, c| {
-            string.extend(c.chars());
+            string.push_str(&c);
             string
         }),
         char('"'),
@@ -132,7 +132,7 @@ fn regex(input: &str) -> IResult<&str, String> {
         delimited(
             char('/'),
             fold_many0(regex_character, String::new, |mut string, c| {
-                string.extend(c.chars());
+                string.push_str(&c);
                 string
             }),
             char('/'),
@@ -258,12 +258,12 @@ fn import_ref(input: &str) -> IResult<&str, String> {
                     format!(
                         ".{}{}{}",
                         n.iter().collect::<String>(),
-                        if let Some(Some((ppa, pppa))) = pa {
+                        if let Some(Some((yrcn, yrcn_vec))) = pa {
                             format!(
                                 "({}{}{})",
-                                ppa,
-                                if pppa.len() > 0 { ", " } else { "" },
-                                pppa.iter()
+                                yrcn,
+                                if !yrcn_vec.is_empty() { ", " } else { "" },
+                                yrcn_vec.iter()
                                     .map(|ppp| ppp.to_string())
                                     .collect::<Vec<String>>()
                                     .join(", ")
@@ -292,7 +292,7 @@ fn number(input: &str) -> IResult<&str, i64> {
             pair(tag("0x"), many0(one_of("0123456789abcdefABCDEF"))),
             |(_, d)| i64::from_str_radix(&d.iter().collect::<String>(), 16),
         ),
-        map_res(digit1, |d| i64::from_str_radix(d, 10)),
+        map_res(digit1, |d: &str| d.parse::<i64>()),
     ))(input)
 }
 
@@ -361,7 +361,7 @@ fn bytes_with_offset(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
 
 fn size(i: &str) -> IResult<&str, usize> {
     let res = pair(
-        map_res(digit1, |s| usize::from_str_radix(s, 10)),
+        map_res(digit1, |s: &str| s.parse::<usize>()),
         alt((tag("KB"), tag("MB"))),
     )(i)?;
     Ok((
@@ -489,23 +489,19 @@ fn literal(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
             for_of,
             for_in,
             not,
-            map(import_ref, |m| crate::YarRuleConditionNode::ImportRef(m)),
+            map(import_ref, crate::YarRuleConditionNode::ImportRef),
             bytes_with_offset,
             map(pair(string_name, tag("*")), |(m, _)| {
                 crate::YarRuleConditionNode::StringRefMask(format!("{}*", m))
             }),
-            map(regex, |m| crate::YarRuleConditionNode::Regex(m)),
-            map(string, |m| crate::YarRuleConditionNode::ConstString(m)),
-            map(string_count2, |m| {
-                crate::YarRuleConditionNode::StringCount(m)
-            }),
-            map(string_count, |m| {
-                crate::YarRuleConditionNode::StringCount(m)
-            }),
-            map(string_name, |m| crate::YarRuleConditionNode::StringRef(m)),
-            map(name, |m| crate::YarRuleConditionNode::RuleRef(m)),
-            map(size, |m| crate::YarRuleConditionNode::Size(m)),
-            map(number, |m| crate::YarRuleConditionNode::Number(m)),
+            map(regex, crate::YarRuleConditionNode::Regex),
+            map(string, crate::YarRuleConditionNode::ConstString),
+            map(string_count2, crate::YarRuleConditionNode::StringCount),
+            map(string_count, crate::YarRuleConditionNode::StringCount),
+            map(string_name, crate::YarRuleConditionNode::StringRef),
+            map(name, crate::YarRuleConditionNode::RuleRef),
+            map(size, crate::YarRuleConditionNode::Size),
+            map(number, crate::YarRuleConditionNode::Number),
             range,
             set,
             parens,
@@ -689,8 +685,8 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule> {
         }
     };
     let mut r = crate::YarRule::new(
-        if let Some(_) = res.1 .1 { true } else { false },
-        if let Some(_) = res.1 .2 { true } else { false },
+        matches!(res.1 .1, Some(_)),
+        matches!(res.1 .2, Some(_)),
         res.1 .6,
         vec![],
         res.1 .10,
@@ -714,9 +710,9 @@ pub fn parse_rules(f: String, i: &str) -> IResult<&str, crate::YarRuleSet> {
     let res = many1(preceded(
         whitespace0,
         alt((
-            map(import, |i| Ss::Import(i)),
-            map(include, |i| Ss::Include(i)),
-            map(rule, |r| Ss::Rule(r)),
+            map(import, Ss::Import),
+            map(include, Ss::Include),
+            map(rule, Ss::Rule),
         )),
     ))(i);
 

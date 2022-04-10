@@ -102,10 +102,10 @@ fn main() {
 
             let mut f = File::create(output_file).expect("error creating output yara file");
             for i in &all_yars.imports {
-                write!(f, "import {}\n", i).expect("error in writing \"imports\" to output file")
+                writeln!(f, "import {}", i).expect("error in writing \"imports\" to output file")
             }
-            write!(f, "\n").expect("error in writing to file");
-            write!(f, "{}\n\n", all_yars).expect("error in writing \"yara rules\" to output file");
+            writeln!(f).expect("error in writing to file");
+            writeln!(f, "{}\n", all_yars).expect("error in writing \"yara rules\" to output file");
             println!("* Output yara file stored in: {}", output_file);
         }
         Some(("compile", compile_args)) => {
