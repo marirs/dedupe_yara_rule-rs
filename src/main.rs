@@ -70,7 +70,7 @@ fn main() {
                     file_count += 1;
                 })
                 .map(|path| {
-                    let mut file = File::open(path.clone()).unwrap();
+                    let mut file = File::open(path.to_owned()).unwrap();
                     let mut buf = vec![];
                     file.read_to_end(&mut buf).unwrap();
                     (path, String::from_utf8_lossy(&buf).to_string())
@@ -85,7 +85,7 @@ fn main() {
                             .to_string(),
                         &x,
                     )
-                    .map(|x| (x.1.name.clone(), x.1))
+                    .map(|x| (x.1.name.to_owned(), x.1))
                     .ok()
                 })
                 .collect();
