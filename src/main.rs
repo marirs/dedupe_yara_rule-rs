@@ -70,7 +70,7 @@ fn main() {
                     file_count += 1;
                 })
                 .map(|path| {
-                    let mut file = File::open(path.to_owned()).unwrap();
+                    let mut file = File::open(&path).unwrap();
                     let mut buf = vec![];
                     file.read_to_end(&mut buf).unwrap();
                     (path, String::from_utf8_lossy(&buf).to_string())
