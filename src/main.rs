@@ -9,7 +9,7 @@ use std::{
 use yara::Compiler;
 use yara_dedupe::{
     nom::parse_rules,
-    utils::{collect_imports, collect_yar_files},
+    utils::collect_yar_files,
 };
 
 fn main() {
@@ -62,7 +62,6 @@ fn main() {
 
             let mut file_count = 0;
 
-            let mut all_imports = vec![];
             let all_yars: HashMap<_, _> = collect_yar_files(&input_dir)
                 .into_iter()
                 .inspect(|x| {
@@ -77,12 +76,6 @@ fn main() {
                     (path, String::from_utf8_lossy(&buf).to_string())
                 })
                 .flat_map(|(p, x)| {
-                    let imports = collect_imports(x.to_owned());
-                    if !imports.is_empty() {
-                        for import in imports {
-                            all_imports.push(import)
-                        }
-                    }
                     parse_rules(
                         Path::new(&p)
                             .canonicalize()
