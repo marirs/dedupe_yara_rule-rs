@@ -1,5 +1,5 @@
 Armadillov1xxv2xx
-Armadillo_v1xx_v2xx_additional:PEiD
+Armadillo_v1xx_v2xx_additional
 Armadillo_v1xx_v2xx
 Base64_encoded_Executable
 Big_Numbers0
