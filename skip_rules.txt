@@ -8,6 +8,5 @@ Big_Numbers3
 contains_base64
 DB_Connection
 HasRichSignature
-HasRichSignature:PECheck
 ryuk_malware
 XMRIG_Monero_Miner_RID2DC1
