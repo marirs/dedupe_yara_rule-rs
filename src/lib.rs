@@ -228,7 +228,7 @@ impl Display for YarRule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}{}rule {}{} {{\n{}\n}}",
+            "{}{}rule {}{} {{\n{}}}\n",
             if self.global { "global " } else { "" },
             if self.private { "private " } else { "" },
             self.name,
@@ -338,17 +338,22 @@ pub struct YarAll {
 }
 
 impl YarAll {
-    pub fn new(sets: HashMap<String, YarRuleSet>) -> YarAll {
+    pub fn new(sets: HashMap<String, YarRuleSet>, skip_rules: Vec<String>) -> YarAll {
         let mut imports = HashSet::<String>::new();
         let mut ruleset = HashMap::<String, YarRule>::new();
         let mut total_yara_rules = 0;
+        let mut ignored = 0;
         for s in sets.values() {
             for i in &s.imports {
                 imports.insert(i.value.clone());
             }
             for r in s.rules.values() {
                 total_yara_rules += 1;
-                ruleset.insert(r.name.clone(), r.clone());
+                if !skip_rules.contains(&r.name) {
+                    ruleset.insert(r.name.clone(), r.clone());
+                } else {
+                    ignored += 1;
+                }
             }
         }
         println!("* Total yara rules: {}", total_yara_rules);
@@ -357,6 +362,7 @@ impl YarAll {
             ruleset.len(),
             100 * ruleset.len() / total_yara_rules
         );
+        println!("* Total skipped rules: {}", ignored);
         let mut refs = HashMap::new();
         for (n, r) in &ruleset {
             for i in r.get_rule_refs() {

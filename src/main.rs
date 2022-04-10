@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
 use std::{
     collections::HashMap,
-    fs::File,
+    fs::{File, read_to_string},
     io::{Read, Write},
     path::Path,
     process::exit,
@@ -34,6 +34,12 @@ fn main() {
                         .long("output-file")
                         .required(true)
                         .takes_value(true),
+                )
+                .arg(
+                    Arg::new("skip_rules")
+                        .help("skips a list of rules specified in a file")
+                        .long("skip-rules")
+                        .takes_value(true)
                 ),
         )
         .subcommand(
@@ -51,7 +57,21 @@ fn main() {
         Some(("dedupe", dedupe_args)) => {
             let input_dirs: Vec<&str> = dedupe_args.values_of("input_dir").unwrap().collect();
             let output_file = dedupe_args.value_of("output_file").unwrap();
-
+            let skip_rules = if let Some(f) = dedupe_args.value_of("skip_rules"){
+                if !Path::new(f).is_file() {
+                    println!("Skip Rules File with Rule names does not exist: {:?}", f);
+                    exit(1)
+                }
+                let contents = read_to_string(f)
+                    .unwrap();
+                contents
+                    .split('\n')
+                    .into_iter()
+                    .map(|x|x.to_string())
+                    .collect()
+            } else {
+                vec![]
+            };
             let mut all_yar_files = vec![];
             for input_dir in input_dirs {
                 if !Path::new(input_dir).is_dir() {
@@ -94,7 +114,7 @@ fn main() {
                 })
                 .collect();
             println!();
-            let all_yars = yara_dedupe::YarAll::new(all_yars);
+            let all_yars = yara_dedupe::YarAll::new(all_yars, skip_rules);
             println!("* Total files processed: {}", file_count);
 
             let mut f = File::create(output_file).expect("error creating output yara file");
@@ -102,7 +122,7 @@ fn main() {
                 writeln!(f, "import {}", i).expect("error in writing \"imports\" to output file")
             }
             writeln!(f).expect("error in writing to file");
-            writeln!(f, "{}\n", all_yars).expect("error in writing \"yara rules\" to output file");
+            write!(f, "{}", all_yars).expect("error in writing \"yara rules\" to output file");
             println!("* Output yara file stored in: {}", output_file);
         }
         Some(("compile", compile_args)) => {
