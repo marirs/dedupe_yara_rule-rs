@@ -531,7 +531,7 @@ fn term2(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
                 preceded(whitespace0, literal),
             ),
         ),
-        move || l.clone(),
+        move || l.to_owned(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| match op {
             "+" | "-" | "&" | "|" | "*" | "/" | "%" | ">>" | "<<" => {
                 crate::YarRuleConditionNode::Arithm(op.to_string(), Box::new(acc), Box::new(val))
@@ -564,7 +564,7 @@ fn term(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
                 preceded(whitespace0, term2),
             ),
         ),
-        move || l.clone(),
+        move || l.to_owned(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| match op {
             "at" => crate::YarRuleConditionNode::At(Box::new(acc), Box::new(val)),
             "of" => crate::YarRuleConditionNode::Of(Box::new(acc), Box::new(val)),
@@ -584,7 +584,7 @@ fn condition(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
             whitespace0,
             pair(alt((tag("and"), tag("or"))), preceded(whitespace0, term)),
         ),
-        move || l.clone(),
+        move || l.to_owned(),
         |acc, (op, val): (&str, crate::YarRuleConditionNode)| match op {
             "and" => crate::YarRuleConditionNode::And(Box::new(acc), Box::new(val)),
             "or" => crate::YarRuleConditionNode::Or(Box::new(acc), Box::new(val)),
@@ -737,7 +737,7 @@ pub fn parse_rules(f: String, i: &str) -> IResult<&str, crate::YarRuleSet> {
                 includes.push(i);
             }
             Ss::Rule(i) => {
-                rules.insert(i.name.clone(), i);
+                rules.insert(i.name.to_owned(), i);
             }
         }
     }
