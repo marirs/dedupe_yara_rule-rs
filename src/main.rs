@@ -24,7 +24,8 @@ fn main() {
                         .short('i')
                         .long("input-dir")
                         .required(true)
-                        .takes_value(true),
+                        .takes_value(true)
+                        .multiple_values(true),
                 )
                 .arg(
                     Arg::new("output_file")
@@ -48,22 +49,25 @@ fn main() {
 
     match matches.subcommand() {
         Some(("dedupe", dedupe_args)) => {
-            let input_dir = dedupe_args.value_of("input_dir").unwrap();
-            let input_dir = if input_dir.is_empty() {
-                println!("Input folder not define: {:?}", input_dir);
-                exit(1)
-            } else if !Path::new(input_dir).is_dir() {
-                println!("Input folder not dir or not exists: {:?}", input_dir);
-                exit(1)
-            } else {
-                input_dir
-            };
+            let input_dirs: Vec<&str> = dedupe_args.values_of("input_dir").unwrap().collect();
             let output_file = dedupe_args.value_of("output_file").unwrap();
+
+            let mut all_yar_files = vec![];
+            for input_dir in input_dirs {
+                if !Path::new(input_dir).is_dir() {
+                    println!("Input folder not dir or not exists: {:?}", input_dir);
+                    exit(1)
+                }
+
+                all_yar_files.push(collect_yar_files(&input_dir))
+
+            }
 
             let mut file_count = 0;
 
-            let all_yars: HashMap<_, _> = collect_yar_files(&input_dir)
+            let all_yars: HashMap<_, _> = all_yar_files
                 .into_iter()
+                .flatten()
                 .inspect(|x| {
                     print!("\r[* examining: {:120}]", x);
                     let _ = std::io::stdout().flush();
