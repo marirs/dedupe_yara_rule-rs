@@ -7,7 +7,7 @@ It also organises & creates:
 
 ### Requirements
 - Rust 1.50+
-- Yara 4.1.1
+- Yara 4.2.x
 - Jansson
   - macOS: `brew install jansson`
   - Linux: `apt -y install libjansson-dev libjansson4`
@@ -19,9 +19,9 @@ It also organises & creates:
 - Linux
 ```bash
 sudo apt-get -y install libjansson-dev libmagic-dev libmagic1 libclang-dev clang
-wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.1.2.zip
-unzip v4.1.1.zip
-cd yara-4.1.1/
+wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.2.0.zip
+unzip v4.2.0.zip
+cd yara-4.2.0/
 ./bootstrap.sh
 ./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-macho --enable-dex --enable-magic --enable-profiling --with-crypto
 make -j8
