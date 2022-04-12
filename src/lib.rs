@@ -357,12 +357,13 @@ impl YarAll {
             }
         }
         println!("* Total yara rules: {}", total_yara_rules);
+        println!("! Total rules to skip: {}", skip_rules.len());
         println!(
             "* Total yara rules after dedupe: {} ({}%)",
             ruleset.len(),
             100 * ruleset.len() / total_yara_rules
         );
-        println!("* Total skipped rules: {}", ignored);
+        println!("! Total skipped rules: {}", ignored);
         let mut refs = HashMap::new();
         for (n, r) in &ruleset {
             for i in r.get_rule_refs() {
