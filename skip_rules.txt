@@ -1,0 +1,12 @@
+Armadillov1xxv2xx
+Armadillo_v1xx_v2xx_additional
+Armadillo_v1xx_v2xx
+Base64_encoded_Executable
+Big_Numbers0
+Big_Numbers1
+Big_Numbers3
+contains_base64
+DB_Connection
+HasRichSignature
+ryuk_malware
+XMRIG_Monero_Miner_RID2DC1
