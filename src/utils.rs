@@ -27,18 +27,13 @@ pub fn remove_comments(st: String) -> String {
 }
 
 pub fn collect_imports(st: String) -> Vec<String> {
-    st
-        .lines()
-        .map(|x|{
-            if x.starts_with("import") {
-                x
-            } else {
-                ""
-            }
+    st.lines()
+        .map(|x| {
+            if x.starts_with("import") { x } else { "" }
                 .trim()
                 .replace("import\"", "import \"")
-                .replace("“", "\"")
-                .replace("”", "\"")
+                .replace('“', "\"")
+                .replace('”', "\"")
         })
         .collect()
 }
