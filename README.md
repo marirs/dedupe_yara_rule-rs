@@ -30,9 +30,9 @@ ldconfig
 ```
 
 ### Compiling
-- macOS
+- From macOS
 ```bash
-YARA_ENABLE_CRYPTO=0 \
+YARA_ENABLE_CRYPTO=1 \
 YARA_ENABLE_HASH=1 \
 YARA_ENABLE_PROFILING=1 \
 YARA_ENABLE_MAGIC=1 \
@@ -43,7 +43,21 @@ YARA_ENABLE_MACHO=1  \
 cargo b --release
 ```
 
-- Linux
+#### Cross compiling for linux:
+```bash
+LIBYARA_STATIC=1 \
+YARA_ENABLE_CRYPTO=1 \
+YARA_ENABLE_HASH=1 \
+YARA_ENABLE_PROFILING=1 \
+YARA_ENABLE_MAGIC=1 \
+YARA_ENABLE_CUCKOO=1 \
+YARA_ENABLE_DOTNET=1 \
+YARA_ENABLE_DEX=1 \
+YARA_ENABLE_MACHO=1  \
+cargo b --release --target=x86_64-unknown-linux-gnu
+```
+
+- From Linux
 ```bash
 YARA_ENABLE_CRYPTO=1 \
 YARA_ENABLE_HASH=1 \

@@ -1,0 +1,12 @@
+[env]
+YARA_ENABLE_CRYPTO = "true"
+YARA_ENABLE_HASH = "true"
+YARA_ENABLE_PROFILING = "true"
+YARA_ENABLE_MAGIC = "true"
+YARA_ENABLE_CUCKOO = "true"
+YARA_ENABLE_DOTNET = "true"
+YARA_ENABLE_DEX = "true"
+YARA_ENABLE_MACHO = "true"
+
+[target.x86_64-unknown-linux-gnu.env]
+LIBYARA_STATIC = "true"
