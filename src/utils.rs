@@ -32,8 +32,7 @@ pub fn collect_imports(st: String) -> Vec<String> {
             if x.starts_with("import") { x } else { "" }
                 .trim()
                 .replace("import\"", "import \"")
-                .replace('“', "\"")
-                .replace('”', "\"")
+                .replace(['“', '”'], "\"")
         })
         .collect()
 }

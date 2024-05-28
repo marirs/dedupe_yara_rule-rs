@@ -263,7 +263,8 @@ fn import_ref(input: &str) -> IResult<&str, String> {
                                 "({}{}{})",
                                 yrcn,
                                 if !yrcn_vec.is_empty() { ", " } else { "" },
-                                yrcn_vec.iter()
+                                yrcn_vec
+                                    .iter()
                                     .map(|ppp| ppp.to_string())
                                     .collect::<Vec<String>>()
                                     .join(", ")
@@ -685,8 +686,8 @@ pub fn rule(i: &str) -> IResult<&str, crate::YarRule> {
         }
     };
     let mut r = crate::YarRule::new(
-        matches!(res.1 .1, Some(_)),
-        matches!(res.1 .2, Some(_)),
+        res.1 .1.is_some(),
+        res.1 .2.is_some(),
         res.1 .6,
         vec![],
         res.1 .10,
