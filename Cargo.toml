@@ -12,7 +12,7 @@ edition="2021"
 clap = "3.1.8"
 nom = "7.1.1"
 regex = "1.5.5"
-yara = { version = "0.13.0", features = ["serde", "vendored"] }
+yara-x = "0.3.0"
 
 [[bin]]
 name = "yara_dedupe"

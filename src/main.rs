@@ -6,7 +6,7 @@ use std::{
     path::Path,
     process::exit,
 };
-use yara::Compiler;
+use yara_x::Compiler;
 use yara_dedupe::{
     nom::parse_rules,
     utils::collect_yar_files,
@@ -127,39 +127,32 @@ fn main() {
         }
         Some(("compile", compile_args)) => {
             let input_file = compile_args.value_of("input_file").unwrap();
-            let compiler = Compiler::new().unwrap().add_rules_file(input_file);
-            let compiler = match compiler {
-                Ok(r) => r,
-                Err(e) => {
-                    if let yara::Error::Compile(e) = e {
-                        for e in e.iter() {
-                            if e.level == yara::errors::CompileErrorLevel::Error {
-                                //                                if !e.message.contains("regular expression") && !e.message.contains("unreferenced"){
-                                eprintln!("Couldn't add rule: {:#?}", e);
-                                //                                }
-                            }
-                        }
-                    }
-                    panic!("");
+            let file_content = read_to_string(input_file).unwrap();
+            let mut compiler = Compiler::new();
+            if let Err(e) = compiler.add_source(file_content.as_str()) {
+                if let yara_x::Error::CompileError(e) = e {
+                    // for e in e. {
+                    //     if e.level == yara::errors::CompileErrorLevel::Error {
+                    //                                if !e.message.contains("regular expression") && !e.message.contains("unreferenced"){
+                    eprintln!("Couldn't add rule: {:#?}", e);
+                    //                                }
+                    //     }
+                    // }
                 }
+                panic!("");
             };
 
             let compiled_output_file = format!("compiled_{}", input_file);
-            let rules = compiler.compile_rules();
-            let mut rules = match rules {
-                Ok(r) => r,
-                Err(e) => {
-                    eprintln!("Couldn't compile the rules: {:#?}", e);
-                    panic!("");
-                }
-            };
-            rules
-                .save(&compiled_output_file)
-                .expect("Couldn't save the compiled rules");
+            let rules = compiler.build();
+            let serialized_rules = rules.serialize().unwrap();
+            let mut compiled_output_file = File::create(&compiled_output_file).unwrap();
+            compiled_output_file
+                .write_all(&serialized_rules)
+                .expect("Couldn't write the compiled rules to the file");
 
             println!(
                 "* Compiled yara ruleset is stored in: {}",
-                compiled_output_file
+                compiled_output_file.path().display()
             );
         }
         None => println!("No command passed. Nothing to do."),
