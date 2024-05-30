@@ -3,7 +3,7 @@ use nom::{
     bytes::complete::{tag, tag_no_case, take_until},
     character::complete::{
         anychar, char, digit1, line_ending, multispace0, multispace1, none_of, not_line_ending,
-        one_of,
+        one_of, space0,
     },
     combinator::{map, map_res, opt},
     multi::{fold_many0, many0, many1},
@@ -96,7 +96,7 @@ fn string(input: &str) -> IResult<&str, String> {
         }),
         char('"'),
     )(input)?;
-    let (input, modifiers) = many0(preceded(whitespace0, modifier))(ii)?;
+    let (input, modifiers) = many0(preceded(space0, modifier))(ii)?;
     Ok((
         input,
         format!(
@@ -401,7 +401,7 @@ fn set(i: &str) -> IResult<&str, crate::YarRuleConditionNode> {
         whitespace0,
         tag(")"),
     ))(i)?;
-    let mut aa = vec![];
+    let mut aa = vec![Box::new(res.1 .2)];
     for ff in res.1 .3 {
         aa.push(Box::new(ff));
     }
