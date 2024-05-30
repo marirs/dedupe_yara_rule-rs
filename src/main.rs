@@ -143,6 +143,23 @@ fn compile_rules(compile: Compile) {
     }
     let file_content = read_to_string(input_file).unwrap();
     let mut compiler = Compiler::new();
+    compiler.relaxed_re_syntax(true);
+    for (n, v) in [
+        ("filename", ""),
+        ("extension", ""),
+        ("filepath", ""),
+        ("filetype", ""),
+        ("owner", ""),
+    ] {
+        if let Err(e) = compiler.define_global(n, v) {
+            match e {
+                yara_x::Error::CompileError(_) => print_error("COMPILE error", &e),
+                yara_x::Error::ParseError(_) => print_error("PARSE error", &e),
+                yara_x::Error::VariableError(_) => print_error("INVALID VARIABLE", &e),
+            };
+            exit(1);
+        }
+    }
     if let Err(e) = compiler.add_source(file_content.as_str()) {
         match e {
             yara_x::Error::CompileError(_) => print_error("COMPILE error", &e),
