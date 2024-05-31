@@ -92,7 +92,7 @@ impl Display for YarRuleConditionNode {
             Self::RuleRef(a) => write!(f, "{}", a),
             Self::Reserved(a) => write!(f, "{}", a),
             Self::ConstString(a) => write!(f, "{}", a),
-            Self::Regex(a) => write!(f, "/{}/", a),
+            Self::Regex(a) => write!(f, "{}", a),
             Self::Number(a) => write!(f, "{}", a),
             Self::Size(a) => write!(f, "{}", a),
             Self::BytesWithOffset(a, b) => write!(f, "{}({})", a, b),
