@@ -88,15 +88,20 @@ pub enum SubCommand {
 /// A subcommand for deduping yara rules
 #[derive(Args)]
 pub struct Dedupe {
-    /// The input directory for the yara rule files used for dedupe.
+    /// The input directory/ies for the deduplication process.
     ///
-    /// This directory contains the yara rule files that will be used for deduplication.
-    /// It is a required argument and specifies the location where the yara rule files are stored.
+    /// This argument specifies the input directory/ies from which the program will search for duplicate files.
+    /// It is a required argument and accepts one or more directory paths.
+    ///
     /// # Notes
     ///
-    /// - The directory must exist and should have the necessary read permissions.
-    /// - If multiple directories need to be specified, they can be separated by a comma.
-    #[clap(short = 'i', long = "input-dir", required = true)]
+    /// - Multiple directories can be passed as separate arguments.
+    /// - Each directory path should be valid and point to an existing directory.
+    /// - The program will recursively search all the directories specified for duplicate files.
+    /// - If a directory contains subdirectories, the program will also search for duplicate files within the subdirectories.
+    /// - The program will throw an error if no valid directory paths are provided.
+    /// - The program will throw an error if any of the specified directories do not exist.
+    #[clap(short = 'i', long = "input-dir", required = true, use_value_delimiter = true, num_args = 1..)]
     pub input_dir: Vec<String>,
 
     /// The output file for the deduplication results.
