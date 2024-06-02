@@ -380,9 +380,9 @@ impl YarAll {
                 yr.refs = v.clone().into_iter().collect()
             }
         }
-        let mut ss = ruleset.into_values().collect::<Vec<YarRule>>();
-        ss.sort_by(|a, b| b.refs.len().cmp(&a.refs.len()));
-        YarAll { imports, rules: ss }
+        let mut yararules = ruleset.into_values().collect::<Vec<YarRule>>();
+        yararules.sort_by(|a, b| b.refs.len().cmp(&a.refs.len()));
+        YarAll { imports, rules: yararules }
     }
 }
 
