@@ -51,7 +51,10 @@ fn dedupe_rules(dedupe: Dedupe) {
     let output_file = dedupe.output_file.as_str();
     let skip_rules = if let Some(f) = dedupe.skip_rules {
         if !Path::new(&f).is_file() {
-            println!("Skip Rules \"File\" with Rule names does not exist: {:?}", f);
+            println!(
+                "Skip Rules \"File\" with Rule names does not exist: {:?}",
+                f
+            );
             exit(1)
         }
         let contents = read_to_string(f).unwrap();

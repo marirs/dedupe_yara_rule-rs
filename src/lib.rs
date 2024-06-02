@@ -18,6 +18,15 @@ pub struct YarImport {
 }
 
 impl Display for YarImport {
+    /// Formats the value of the struct and writes it to the given formatter.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A mutable reference to the formatter to write the formatted value to.
+    ///
+    /// # Return
+    ///
+    /// This method returns a `std::fmt::Result`, indicating whether the operation was successful.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
     }
@@ -62,6 +71,17 @@ pub enum YarRuleConditionNode {
 }
 
 impl Display for YarRuleConditionNode {
+    /// Formats the given expression as a string.
+    ///
+    /// This method is used to format expressions in a user-friendly way. It takes a formatter
+    /// and writes the formatted expression to it.
+    ///
+    /// Arguments
+    /// - `f`: A mutable reference to a `std::fmt::Formatter`.
+    ///        The formatter to write the formatted expression to.
+    ///
+    /// Returns
+    /// - `std::fmt::Result`: A `Result` indicating whether the formatting was successful or not.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::And(a, b) => write!(f, "{} and {}", a, b),
@@ -188,14 +208,35 @@ impl YarRuleConditionNode {
     }
 }
 
+/// `YarRuleBody` is a struct that represents the body of a Yara rule.
+/// It contains metadata, strings, and a condition for the rule.
+///
+/// # Fields
+/// - `meta`: A `HashMap` of metadata key-value pairs associated with the rule.
+/// - `strings`: A vector of tuples, each containing a string identifier and its value.
+/// - `condition`: An instance of `YarRuleConditionNode` representing the condition for the rule.
 #[derive(Debug, Clone)]
 pub struct YarRuleBody {
+    /// Rule Meta
     pub meta: HashMap<String, String>,
+    /// Rule identifiers and values
     pub strings: Vec<(String, String)>,
+    /// Rule condition
     pub condition: YarRuleConditionNode,
 }
 
 impl Display for YarRuleBody {
+    /// Formats the struct into a string representation.
+    ///
+    /// This method formats the struct into a string representation and writes it to the provided `std::fmt::Formatter`.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A mutable reference to a `std::fmt::Formatter` object.
+    ///
+    /// # Errors
+    ///
+    /// This method returns a `std::fmt::Result` indicating whether the formatting succeeded or not.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if !self.meta.is_empty() {
             writeln!(f, "meta:")?;
@@ -214,6 +255,20 @@ impl Display for YarRuleBody {
     }
 }
 
+/// `YarRule` is a struct representing a Yara rule.
+///
+/// A Yara rule consists of a private flag, a global flag, a name, tags, a body,
+/// a set of references, and an added flag.
+///
+/// # Fields
+///
+/// - `private`: Indicates whether the rule is private.
+/// - `global`: Indicates whether the rule is global.
+/// - `name`: The name of the rule.
+/// - `tags`: A vector of tags associated with the rule.
+/// - `body`: An instance of `YarRuleBody` representing the body of the rule.
+/// - `refs`: A `HashSet` containing references used in the rule.
+/// - `added`: Indicates whether the rule has been added.
 #[derive(Debug, Clone)]
 pub struct YarRule {
     pub private: bool,
@@ -226,6 +281,15 @@ pub struct YarRule {
 }
 
 impl Display for YarRule {
+    /// Formats the rule object into a string representation.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A mutable reference to a Formatter to write the formatted string to.
+    ///
+    /// # Errors
+    ///
+    /// Returns a Result indicating whether the operation was successful or not.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -244,6 +308,19 @@ impl Display for YarRule {
 }
 
 impl YarRule {
+    /// Creates a new `YarRule` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `private` - A boolean indicating whether the rule is private.
+    /// * `global` - A boolean indicating whether the rule is global.
+    /// * `name` - The name of the rule.
+    /// * `tags` - A vector of tags associated with the rule.
+    /// * `body` - The body of the rule.
+    ///
+    /// # Returns
+    ///
+    /// A new `YarRule` instance.
     pub fn new(
         private: bool,
         global: bool,
@@ -267,6 +344,15 @@ impl YarRule {
     }
 }
 
+/// `YarRuleSet` is a struct representing a set of Yara rules.
+/// It contains the name of the rule set, includes, imports, rules, and references.
+///
+/// # Fields
+/// - `name`: A string representing the name of the rule set.
+/// - `includes`: A vector of `YarInclude` struct representing the Yara includes for the rule set.
+/// - `imports`: A vector of `YarImport` struct representing the Yara imports for the rule set.
+/// - `rules`: A `HashMap` where the key is the rule name and the value is a `YarRule` struct representing the rule.
+/// - `refs`: A vector of strings representing the references used in the rule set.
 #[derive(Default, Debug)]
 pub struct YarRuleSet {
     pub name: String,
@@ -277,6 +363,34 @@ pub struct YarRuleSet {
 }
 
 impl YarRuleSet {
+    /// Creates a new `YarRuleSet` with the given parameters.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the rule set.
+    /// * `includes` - The list of `YarInclude` objects to include in the rule set.
+    /// * `imports` - The list of `YarImport` objects to import in the rule set.
+    /// * `rules` - The map of rule names to `YarRule` objects.
+    ///
+    /// # Returns
+    ///
+    /// The newly created `YarRuleSet`.
+    ///
+    /// # Example
+    ///
+    /// ```norun
+    /// use crate::YarRuleSet;
+    /// use crate::YarInclude;
+    /// use crate::YarImport;
+    /// use crate::YarRule;
+    /// use std::collections::HashMap;
+    ///
+    /// let includes = vec![YarInclude {}];
+    /// let imports = vec![YarImport {}];
+    /// let rules = HashMap::new();
+    ///
+    /// let rule_set = YarRuleSet::new("My Rule Set".to_string(), includes, imports, rules);
+    /// ```
     pub fn new(
         name: String,
         includes: Vec<YarInclude>,
@@ -294,6 +408,16 @@ impl YarRuleSet {
 }
 
 impl Display for YarRuleSet {
+    /// Formats the rules of an object and writes them to a formatter.
+    ///
+    /// # Arguments
+    ///
+    /// - `self`: A reference to the current object.
+    /// - `f`: A mutable reference to a `std::fmt::Formatter` where the formatted rules will be written.
+    ///
+    /// # Returns
+    ///
+    /// This method returns a `std::fmt::Result` indicating whether the writing operation was successful or not.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for v in self.rules.values() {
             writeln!(f, "{}", v)?;
@@ -332,13 +456,28 @@ impl PartialEq for YarRuleSet {
 
 impl Eq for YarRuleSet {}
 
+/// `YarAll` is a struct that represents a collection of Yara rules and their associated imports.
+/// It consolidates all Yara rules and their imports collected from the input paths.
 #[derive(Default, Debug)]
 pub struct YarAll {
+    /// All imports collected from all the rules.
+    /// This will sit at the top of the final output.
     pub imports: HashSet<String>,
+    /// All rules collected from all the rules.
     pub rules: Vec<YarRule>,
 }
 
 impl YarAll {
+    /// Creates a new YarAll instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `sets` - A HashMap containing YarRuleSets, where the key is the name of the ruleset.
+    /// * `skip_rules` - A Vec of strings containing the names of rules that should be skipped.
+    ///
+    /// # Returns
+    ///
+    /// A YarAll instance containing the imported rules and the ruleset.
     pub fn new(sets: HashMap<String, YarRuleSet>, skip_rules: Vec<String>) -> YarAll {
         let mut imports = HashSet::<String>::new();
         let mut ruleset = HashMap::<String, YarRule>::new();
@@ -382,7 +521,10 @@ impl YarAll {
         }
         let mut yararules = ruleset.into_values().collect::<Vec<YarRule>>();
         yararules.sort_by(|a, b| b.refs.len().cmp(&a.refs.len()));
-        YarAll { imports, rules: yararules }
+        YarAll {
+            imports,
+            rules: yararules,
+        }
     }
 }
 

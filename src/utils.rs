@@ -19,6 +19,16 @@ pub fn collect_yar_files(path: &dyn AsRef<Path>) -> Vec<String> {
     }
 }
 
+/// Removes all comments from the given string.
+/// The function uses a regular expression to find and remove both single-line and multi-line comments.
+///
+/// # Arguments
+///
+/// * `st` - The input string from which comments will be removed.
+///
+/// # Returns
+///
+/// * The input string with all comments removed.
 pub fn remove_comments(st: String) -> String {
     let comments = Regex::new(r#"(/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/|^//.*?$)"#).unwrap();
 
@@ -26,6 +36,15 @@ pub fn remove_comments(st: String) -> String {
     st.into()
 }
 
+/// Collects import statements from a given string.
+///
+/// # Arguments
+///
+/// * `st` - A string containing import statements.
+///
+/// # Returns
+///
+/// A vector of import statements.
 pub fn collect_imports(st: String) -> Vec<String> {
     st.lines()
         .map(|x| {
