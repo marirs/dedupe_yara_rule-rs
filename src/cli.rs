@@ -152,6 +152,18 @@ pub struct Compile {
 }
 
 impl CliOpts {
+    /// Parse command line arguments and return an instance of `Self`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,norun
+    ///
+    /// let parsed_args = Cli::parse_cli();
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Self` with the command line arguments parsed.
     pub fn parse_cli() -> Self {
         Self::parse()
     }
