@@ -63,13 +63,15 @@ fn dedupe_rules(dedupe: Dedupe) {
         vec![]
     };
     let mut all_yar_files = vec![];
+
+    println!("* Total folders to scan: {}", input_dirs.len());
     for input_dir in input_dirs {
         if !Path::new(input_dir).is_dir() {
             println!("Input folder not dir or not exists: {:?}", input_dir);
             exit(1)
         }
 
-        all_yar_files.push(collect_yar_files(&input_dir))
+        all_yar_files.push(collect_yar_files(input_dir))
     }
 
     let mut file_count = 0;

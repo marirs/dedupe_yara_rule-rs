@@ -1,13 +1,22 @@
 use regex::Regex;
 use std::path::Path;
 
-pub fn collect_yar_files(path: &dyn AsRef<Path>) -> Vec<String> {
+/// Collects YAR/YARA files recursively from the provided directory path.
+///
+/// This function recursively searches for files with ".yar" or ".yara" extensions
+/// in the specified directory and its subdirectories. It returns a vector of strings
+/// containing the file paths.
+///
+/// # Arguments
+///
+/// * `path` - A reference to a `dyn AsRef<Path>` that represents the directory path.
+pub fn collect_yar_files<P: AsRef<Path> + ToString>(path: P) -> Vec<String> {
     if path.as_ref().is_dir() {
         path.as_ref()
             .read_dir()
             .unwrap()
             .flatten()
-            .flat_map(|c| collect_yar_files(&c.path()))
+            .flat_map(|c| collect_yar_files(c.path().to_string_lossy().to_string()))
             .collect::<Vec<_>>()
     } else {
         match path.as_ref().extension() {
