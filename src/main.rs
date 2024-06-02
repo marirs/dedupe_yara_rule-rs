@@ -48,10 +48,10 @@ fn main() {
 /// ```
 fn dedupe_rules(dedupe: Dedupe) {
     let input_dirs: Vec<&str> = dedupe.input_dir.iter().map(|x| x.as_str()).collect();
-    let output_file = dedupe.output_file;
+    let output_file = dedupe.output_file.as_str();
     let skip_rules = if let Some(f) = dedupe.skip_rules {
         if !Path::new(&f).is_file() {
-            println!("Skip Rules File with Rule names does not exist: {:?}", f);
+            println!("Skip Rules \"File\" with Rule names does not exist: {:?}", f);
             exit(1)
         }
         let contents = read_to_string(f).unwrap();
@@ -103,7 +103,7 @@ fn dedupe_rules(dedupe: Dedupe) {
     let all_yars = yara_dedupe::YarAll::new(all_yars, skip_rules);
     println!("* Total files processed: {}", file_count);
 
-    let mut f = File::create(output_file.clone()).expect("error creating output yara file");
+    let mut f = File::create(output_file).expect("error creating output yara file");
     for i in &all_yars.imports {
         writeln!(f, "import {}", i).expect("error in writing \"imports\" to output file")
     }
