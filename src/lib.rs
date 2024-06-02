@@ -366,8 +366,8 @@ impl YarAll {
         );
         println!("! Total skipped rules: {}", ignored);
         let mut refs = HashMap::new();
-        for (n, r) in &ruleset {
-            for i in r.get_rule_refs() {
+        for (n, yr) in &ruleset {
+            for i in yr.get_rule_refs() {
                 if i != *n {
                     let ss = refs.entry(i).or_insert(vec![]);
                     ss.push(n.to_string())
@@ -375,9 +375,9 @@ impl YarAll {
             }
         }
 
-        for (n, rr) in &refs {
-            if let Some(ss) = ruleset.get_mut(n) {
-                ss.refs = rr.clone().into_iter().collect()
+        for (n, v) in &refs {
+            if let Some(yr) = ruleset.get_mut(n) {
+                yr.refs = v.clone().into_iter().collect()
             }
         }
         let mut ss = ruleset.into_values().collect::<Vec<YarRule>>();
