@@ -6,8 +6,8 @@ It also organises & creates:
 - compiles and saves the compiled yara file
 
 ### Requirements
-- Rust 1.50+
-- Yara 4.2.x
+- Rust 1.70+
+- Yara-X
 - Jansson
   - macOS: `brew install jansson`
   - Linux: `apt -y install libjansson-dev libjansson4`
@@ -15,83 +15,23 @@ It also organises & creates:
   - macOS: `brew install libmagic`
   - Linux: `apt -y install libmagic1 libmagic-dev`
 
-### Preparing the system
-- Linux
-```bash
-sudo apt-get -y install libjansson-dev libmagic-dev libmagic1 libclang-dev clang
-wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.2.0.zip
-unzip v4.2.0.zip
-cd yara-4.2.0/
-./bootstrap.sh
-./configure --enable-cuckoo --enable-magic --enable-dotnet --enable-macho --enable-dex --enable-magic --enable-profiling --with-crypto
-make -j8
-make install
-ldconfig
-```
-
-### Compiling
-- From macOS
-```bash
-YARA_ENABLE_CRYPTO=1 \
-YARA_ENABLE_HASH=1 \
-YARA_ENABLE_PROFILING=1 \
-YARA_ENABLE_MAGIC=1 \
-YARA_ENABLE_CUCKOO=1 \
-YARA_ENABLE_DOTNET=1 \
-YARA_ENABLE_DEX=1 \
-YARA_ENABLE_MACHO=1  \
-cargo b --release
-```
-
-#### Cross compiling for linux:
-```bash
-LIBYARA_STATIC=1 \
-YARA_ENABLE_CRYPTO=1 \
-YARA_ENABLE_HASH=1 \
-YARA_ENABLE_PROFILING=1 \
-YARA_ENABLE_MAGIC=1 \
-YARA_ENABLE_CUCKOO=1 \
-YARA_ENABLE_DOTNET=1 \
-YARA_ENABLE_DEX=1 \
-YARA_ENABLE_MACHO=1  \
-cargo b --release --target=x86_64-unknown-linux-gnu
-```
-
-- From Linux
-```bash
-YARA_ENABLE_CRYPTO=1 \
-YARA_ENABLE_HASH=1 \
-YARA_ENABLE_PROFILING=1 \
-YARA_ENABLE_MAGIC=1 \
-YARA_ENABLE_CUCKOO=1 \
-YARA_ENABLE_DOTNET=1 \
-YARA_ENABLE_DEX=1 \
-YARA_ENABLE_MACHO=1  \
-cargo b --release
-```
 
 ### Running the program
 - Help
 ```bash
 ./target/release/yara_dedupe -h
-Yara Dedupe 0.1.1
+Dedup yara rules and compile
 
-Marirs <marirs@gmail.com>
+Usage: yara_dedupe <COMMAND>
 
-Dedupes & compiles given yara rules
+Commands:
+  dedupe   Remove duplicates from a vector of YARA rules
+  compile  Compile a YARA rule into a binary format
+  help     Print this message or the help of the given subcommand(s)
 
-USAGE:
-    yara_dedup [SUBCOMMAND]
-
-FLAGS:
-    -h, --help       Print help information
-    -V, --version    Print version information
-
-SUBCOMMANDS:
-    compile    Compiles a given Yara ruleset
-    dedupe     Dedupe given yara rules
-    help       Print this message or the help of the given subcommand(s)
-    
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 - Deduplicating
@@ -102,14 +42,12 @@ SUBCOMMANDS:
 * Total yara rules: 5546
 * Total yara rules after dedupe: 5535
 * Output yara file stored in: all.yara
-
 ```
 
 - Compiling the rules
 ```bash
 ./target/release/yara_dedupe compile all.yara
 * Compiled yara ruleset is stored in: compiled_all.yara
-
 ```
 ---
 License: MIT
