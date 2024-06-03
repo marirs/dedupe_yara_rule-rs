@@ -21,7 +21,7 @@ mkdir -p dist
 # copy files to the dist folder
 # macos
 cp target/aarch64-apple-darwin/release/yara_dedupe dist/yaya_dedupe_macos_aarch64_v"$CURRENT_VER"
-cp target/x86_64-apple-darwin/release/yara_dedupe dist/fyara_dedupe_macos_x86-64_v"$CURRENT_VER"
+cp target/x86_64-apple-darwin/release/yara_dedupe dist/yara_dedupe_macos_x86-64_v"$CURRENT_VER"
 # linux
 cp target/aarch64-unknown-linux-gnu/release/yara_dedupe dist/yara_dedupe_linux_aarch64_v"$CURRENT_VER"
 cp target/x86_64-unknown-linux-gnu/release/yara_dedupe dist/yara_dedupe_linux_x86-64_v"$CURRENT_VER"
