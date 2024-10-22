@@ -157,20 +157,22 @@ fn compile_rules(compile: Compile) {
         ("owner", ""),
     ] {
         if let Err(e) = compiler.define_global(n, v) {
-            match e {
-                yara_x::Error::CompileError(_) => print_error("COMPILE error", &e),
-                yara_x::Error::ParseError(_) => print_error("PARSE error", &e),
-                yara_x::Error::VariableError(_) => print_error("INVALID VARIABLE", &e),
-            };
+            // match e {
+            //     yara_x::Error::CompileError(_) => print_error("COMPILE error", &e),
+            //     yara_x::Error::ParseError(_) => print_error("PARSE error", &e),
+            //     yara_x::Error::VariableError(_) => print_error("INVALID VARIABLE", &e),
+            // };
+            println!("Error: {}", e);
             exit(1);
         }
     }
     if let Err(e) = compiler.add_source(file_content.as_str()) {
-        match e {
-            yara_x::Error::CompileError(_) => print_error("COMPILE error", &e),
-            yara_x::Error::ParseError(_) => print_error("PARSE error", &e),
-            yara_x::Error::VariableError(_) => print_error("INVALID VARIABLE", &e),
-        };
+        // match e {
+        //     yara_x::Error::CompileError(_) => print_error("COMPILE error", &e),
+        //     yara_x::Error::ParseError(_) => print_error("PARSE error", &e),
+        //     yara_x::Error::VariableError(_) => print_error("INVALID VARIABLE", &e),
+        // };
+        println!("Error: {}", e);
         exit(1);
     };
     println!("* Rules added to the compiler successfully");
@@ -203,7 +205,7 @@ fn compile_rules(compile: Compile) {
     println!("* Compiled yara ruleset is stored in: {}", output_fn);
 }
 
-#[inline]
-fn print_error(error_msg: &str, error: &yara_x::Error) {
-    println!("Couldn't add rule; {}: {:#?}", error_msg, error);
-}
+// #[inline]
+// fn print_error(error_msg: &str, error: &yara_x::Error) {
+//     println!("Couldn't add rule; {}: {:#?}", error_msg, error);
+// }
