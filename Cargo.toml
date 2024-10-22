@@ -11,9 +11,9 @@ edition="2021"
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 filepath = "0.1.2"
-nom = "7.1.1"
-regex = "1.5.5"
-yara-x = { version = "0.4.0", default-features = true, features = ["magic-module"] }
+nom = "7.1"
+regex = "1"
+yara-x = { version = "0.10.0", default-features = true, features = ["magic-module"] }
 
 [[bin]]
 name = "yara_dedupe"
